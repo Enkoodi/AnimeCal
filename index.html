@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>番剧日历</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 收起态：迷你条 -->
+    <div id="collapsed-view" class="collapsed-bar" hidden data-tauri-drag-region>
+      <div class="collapsed-drag" data-tauri-drag-region>
+        <span class="collapsed-title">番剧日历</span>
+        <span id="collapsed-summary" class="collapsed-summary">今日 0 集</span>
+      </div>
+      <button id="btn-expand" class="icon-btn no-drag" title="展开">&#9650;</button>
+    </div>
+
+    <!-- 日历视图 -->
+    <div id="calendar-view" class="view active">
+      <div class="header" data-tauri-drag-region>
+        <button id="prev-month" class="nav-btn no-drag">&#9664;</button>
+        <span id="month-year" data-tauri-drag-region></span>
+        <button id="next-month" class="nav-btn no-drag">&#9654;</button>
+      </div>
+      <div class="weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+      <div class="toolbar">
+        <button id="btn-settings" class="icon-btn" title="设置">&#9881;</button>
+        <button id="btn-toggle-pin" class="icon-btn active pinned" title="已置顶（点击取消）" aria-pressed="true"><span class="pin-icon">📌</span></button>
+        <button id="btn-collapse" class="icon-btn" title="收起">&#9660;</button>
+        <button id="btn-minimize" class="icon-btn" title="最小化到托盘">&#8211;</button>
+        <button id="btn-close" class="icon-btn" title="关闭到托盘">&#10005;</button>
+      </div>
+    </div>
+
+    <!-- 番剧详情视图 -->
+    <div id="detail-view" class="view">
+      <div class="detail-header" data-tauri-drag-region>
+        <button id="btn-back" class="nav-btn no-drag">&#9664;</button>
+        <span id="detail-date" data-tauri-drag-region></span>
+      </div>
+      <div id="anime-list" class="anime-list"></div>
+      <div class="detail-actions">
+        <button id="btn-add-anime" class="action-btn">+ 添加番剧</button>
+      </div>
+    </div>
+
+    <!-- 设置视图 -->
+    <div id="settings-view" class="view">
+      <div class="detail-header" data-tauri-drag-region>
+        <button id="btn-back-settings" class="nav-btn no-drag">&#9664;</button>
+        <span data-tauri-drag-region>设置</span>
+      </div>
+      <div class="settings-content">
+        <div class="setting-group">
+          <h3>我的番剧</h3>
+          <div id="my-anime-list" class="my-anime-list"></div>
+          <div class="btn-row">
+            <button id="btn-following" class="action-btn">管理番剧</button>
+            <button id="btn-manage-anime" class="action-btn">添加番剧</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <h3>数据源</h3>
+          <label class="toggle-label">
+            <input type="checkbox" id="auto-update" checked />
+            自动更新番剧信息
+          </label>
+          <button id="btn-fetch-bangumi" class="action-btn">手动刷新信息</button>
+        </div>
+        <div class="setting-group">
+          <h3>窗口</h3>
+          <label class="toggle-label">
+            <input type="checkbox" id="always-on-top" checked />
+            窗口置顶
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="start-minimized" />
+            启动时最小化到托盘
+          </label>
+        </div>
+      </div>
+    </div>
+
+    </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

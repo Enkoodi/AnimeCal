@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理番剧</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <link rel="stylesheet" href="./src/manager.css" />
+</head>
+<body class="manager-page follow-page">
+  <div id="following-app">
+    <header class="manager-header">
+      <div class="manager-header-text">
+        <h1>管理番剧</h1>
+      </div>
+      <button id="btn-close-following" class="action-btn manager-close-btn no-drag">关闭</button>
+    </header>
+
+    <div id="following-list" class="following-list"></div>
+  </div>
+
+  <script type="module" src="./src/following.js"></script>
+</body>
+</html>

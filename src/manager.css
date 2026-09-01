@@ -1,0 +1,124 @@
+/* 管理番剧独立窗口 */
+body.manager-page {
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+}
+
+#manager-app {
+  min-height: 100%;
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.manager-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.manager-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.manager-header p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.manager-close-btn {
+  width: auto;
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
+
+.manager-tabs {
+  margin-bottom: 0;
+}
+
+.manager-pane {
+  flex: 1;
+  min-height: 0;
+}
+
+.manager-results {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.manager-season {
+  max-height: none;
+  min-height: 220px;
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
+}
+
+.manager-filter {
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
+.manager-filter .selection-bar {
+  border-bottom: none;
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.manager-filter h4 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.refresh-btn {
+  width: auto !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+
+.manual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.manual-full {
+  grid-column: 1 / -1;
+}
+
+/* 隐藏总集数输入框右侧的上下箭头，仅保留数字输入 */
+#manual-eps::-webkit-outer-spin-button,
+#manual-eps::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+#manual-eps {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+body.manager-page .bangumi-item {
+  padding: 10px;
+}
+
+body.manager-page .bangumi-item img {
+  width: 42px;
+  height: 56px;
+}
+
+body.manager-page .bangumi-item-title {
+  font-size: 13px;
+}

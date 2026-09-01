@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理番剧</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <link rel="stylesheet" href="./src/manager.css" />
+</head>
+<body class="manager-page">
+  <div id="manager-app">
+    <header class="manager-header">
+      <div class="manager-header-text">
+        <h1>添加番剧</h1>
+      </div>
+      <button id="btn-close-manager" class="action-btn manager-close-btn no-drag">关闭</button>
+    </header>
+
+    <div class="tabs manager-tabs">
+      <button class="tab-btn active" data-tab="bangumi">自动搜索</button>
+      <button class="tab-btn" data-tab="manual">手动添加</button>
+    </div>
+
+    <div id="tab-bangumi" class="tab-content active manager-pane">
+      <div class="form-group">
+        <div class="search-box">
+          <input type="text" id="bangumi-search" placeholder="搜索番剧名称..." />
+          <button id="btn-search-bangumi" class="action-btn">搜索</button>
+        </div>
+      </div>
+      <div id="bangumi-results" class="bangumi-results manager-results"></div>
+
+      <div class="filter-section manager-filter">
+        <div class="selection-bar">
+          <h4>筛选番剧</h4>
+          <button type="button" id="btn-refresh-season" class="action-btn refresh-btn">刷新列表</button>
+        </div>
+        <div class="filter-controls">
+          <div class="filter-chips" id="weekday-filters">
+            <button type="button" class="chip active" data-weekday="all">全部</button>
+            <button type="button" class="chip" data-weekday="1">一</button>
+            <button type="button" class="chip" data-weekday="2">二</button>
+            <button type="button" class="chip" data-weekday="3">三</button>
+            <button type="button" class="chip" data-weekday="4">四</button>
+            <button type="button" class="chip" data-weekday="5">五</button>
+            <button type="button" class="chip" data-weekday="6">六</button>
+            <button type="button" class="chip" data-weekday="0">日</button>
+          </div>
+          <div class="filter-row">
+            <label for="rating-filter">最低评分</label>
+            <select id="rating-filter">
+              <option value="0">不限</option>
+              <option value="6">6+</option>
+              <option value="7">7+</option>
+              <option value="8">8+</option>
+            </select>
+          </div>
+          <div class="filter-row">
+            <label for="max-rating-filter">最高评分</label>
+            <select id="max-rating-filter">
+              <option value="">不限</option>
+              <option value="3">≤3</option>
+              <option value="4">≤4</option>
+              <option value="5">≤5</option>
+              <option value="6">≤6</option>
+            </select>
+          </div>
+          <div class="filter-row">
+            <label for="name-filter">名称筛选</label>
+            <input type="text" id="name-filter" placeholder="关键词..." />
+          </div>
+        </div>
+        <div id="bangumi-season" class="bangumi-results manager-season"></div>
+      </div>
+    </div>
+
+    <div id="tab-manual" class="tab-content manager-pane">
+      <div class="manual-grid">
+        <div class="form-group">
+          <label>番剧名称</label>
+          <input type="text" id="manual-name" placeholder="输入番剧名称" />
+        </div>
+        <div class="form-group">
+          <label>更新星期</label>
+          <select id="manual-weekday">
+            <option value="1">周一</option>
+            <option value="2">周二</option>
+            <option value="3">周三</option>
+            <option value="4">周四</option>
+            <option value="5">周五</option>
+            <option value="6">周六</option>
+            <option value="0">周日</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>更新时间 (可选)</label>
+          <input type="time" id="manual-time" />
+        </div>
+        <div class="form-group">
+          <label>首播日期（第1集）</label>
+          <input type="text" id="manual-start" placeholder="例如：2026/1/14、2026.2.14" />
+        </div>
+        <div class="form-group">
+          <label>总集数</label>
+          <input type="number" id="manual-eps" min="1" max="999" placeholder="默认 12" />
+        </div>
+        <div class="form-group">
+          <label>完结日期（可选）</label>
+          <input type="text" id="manual-end" placeholder="例如：2026/1/14、2026.2.14" />
+        </div>
+        <div class="form-group manual-full">
+          <label>封面 URL (可选)</label>
+          <input type="text" id="manual-cover" placeholder="https://..." />
+        </div>
+      </div>
+      <button id="btn-save-manual" class="action-btn">保存到关注列表</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/manager.js"></script>
+</body>
+</html>
