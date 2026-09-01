@@ -5,45 +5,24 @@ import { Calendar } from './calendar.js';
 import * as AnimeStore from './anime.js';
 import * as BangumiAPI from './bangumi.js';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
-const EXPANDED_SIZE = { width: 400, height: 480 };
-const COLLAPSED_SIZE = { width: 240, height: 48 };
 const MANAGER_SIZE = { width: 760, height: 680 };
 const FOLLOWING_SIZE = { width: 460, height: 600 };
 
 let calendar = null;
 let currentView = 'calendar';
-let isCollapsed = false;
 let currentDetailDate = null;
 
 function getTauriWindow() {
-  return window.__TAURI__?.window?.getCurrentWindow?.() ?? null;
-}
-
-async function resizeWindow(size, { collapsed = false, x, y } = {}) {
-  const win = getTauriWindow();
-  if (!win) return;
   try {
-    const LogicalSize = window.__TAURI__?.dpi?.LogicalSize;
-    const LogicalPosition = window.__TAURI__?.dpi?.LogicalPosition;
-    if (!LogicalSize) {
-      console.warn('LogicalSize unavailable');
-      return;
-    }
-    const minMax = collapsed ? COLLAPSED_SIZE : EXPANDED_SIZE;
-    await win.setMinSize(new LogicalSize(minMax.width, minMax.height));
-    await win.setMaxSize(new LogicalSize(minMax.width, minMax.height));
-    await win.setSize(new LogicalSize(size.width, size.height));
-    if (x != null && y != null && LogicalPosition) {
-      await win.setPosition(new LogicalPosition(x, y));
-    }
+    return getCurrentWindow();
   } catch (err) {
-    console.warn('resizeWindow failed', err);
+    return null;
   }
 }
 
 function switchView(viewName) {
-  if (isCollapsed) return;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(`${viewName}-view`).classList.add('active');
   currentView = viewName;
@@ -64,75 +43,10 @@ function showToast(message, duration = 2000) {
 
 function refreshMainUi() {
   calendar?.render();
-  updateCollapsedSummary();
   refreshMyAnimeTags();
   if (currentDetailDate && currentView === 'detail') {
     showAnimeDetail(currentDetailDate);
   }
-}
-
-function updateCollapsedSummary() {
-  const count = AnimeStore.getTodayUpdateCount();
-  const el = document.getElementById('collapsed-summary');
-  if (el) el.textContent = count > 0 ? `今日 ${count} 集更新` : '今日无更新';
-}
-
-async function collapseWindow(e) {
-  isCollapsed = true;
-  document.body.classList.add('collapsed');
-  document.getElementById('collapsed-view').hidden = false;
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  updateCollapsedSummary();
-
-  // 让展开键停在点击收起的位置：迷你条右侧的展开按钮对齐到鼠标点击点
-  let x = null, y = null;
-  const win = getTauriWindow();
-  if (win) {
-    try {
-      const scale = (await win.scaleFactor?.()) || 1;
-      const pos = await win.outerPosition?.();
-      const barRect = document.getElementById('collapsed-view')?.getBoundingClientRect();
-      const btnRect = document.getElementById('btn-expand')?.getBoundingClientRect();
-      if (pos && barRect && btnRect) {
-        const offsetFromRight = barRect.right - (btnRect.left + btnRect.width / 2);
-        const clickX = e && e.clientX != null ? e.clientX : (pos.x / scale + btnRect.width / 2);
-        const clickY = e && e.clientY != null ? e.clientY : (pos.y / scale + COLLAPSED_SIZE.height / 2);
-        x = clickX - (COLLAPSED_SIZE.width - offsetFromRight);
-        y = clickY - COLLAPSED_SIZE.height / 2;
-      }
-    } catch (err) {
-      console.warn('collapseWindow position calc failed', err);
-    }
-  }
-  await resizeWindow(COLLAPSED_SIZE, { collapsed: true, x, y });
-}
-
-async function expandWindow() {
-  isCollapsed = false;
-  document.body.classList.remove('collapsed');
-  document.getElementById('collapsed-view').hidden = true;
-
-  // 以迷你条底边为锚向上展开，恢复到底边不变的原位
-  let x = null, y = null;
-  const win = getTauriWindow();
-  if (win) {
-    try {
-      const scale = (await win.scaleFactor?.()) || 1;
-      const pos = await win.outerPosition?.();
-      const cur = await win.outerSize?.();
-      const LogicalPosition = window.__TAURI__?.dpi?.LogicalPosition;
-      if (pos && cur && LogicalPosition) {
-        x = pos.x / scale;
-        const bottom = pos.y / scale + cur.height / scale;
-        y = bottom - EXPANDED_SIZE.height;
-      }
-    } catch (err) {
-      console.warn('expandWindow position calc failed', err);
-    }
-  }
-  await resizeWindow(EXPANDED_SIZE, { collapsed: false, x, y });
-  switchView(currentView === 'detail' || currentView === 'settings' ? currentView : 'calendar');
-  calendar?.render();
 }
 
 function initCalendar() {
@@ -368,18 +282,9 @@ function bindEvents() {
     const pinned = document.getElementById('btn-toggle-pin').classList.contains('active');
     setAlwaysOnTop(!pinned);
   });
-  document.getElementById('btn-collapse').addEventListener('click', (e) => collapseWindow(e));
-  document.getElementById('btn-expand').addEventListener('click', (e) => {
-    e.stopPropagation();
-    expandWindow();
-  });
-  document.getElementById('collapsed-view').addEventListener('dblclick', (e) => {
-    if (e.target.closest('.no-drag')) return;
-    expandWindow();
-  });
 }
 
-/** 收起态 / 标题栏：用 startDragging 保证可拖动（data-tauri-drag-region 在部分 WebView2 上无效） */
+/** 标题栏：用 startDragging 保证可拖动（data-tauri-drag-region 在部分 WebView2 上无效） */
 function initWindowDragging() {
   const tryStartDrag = async (e) => {
     if (e.button !== 0) return;
@@ -476,7 +381,6 @@ function init() {
   initCalendar();
   bindEvents();
   initWindowDragging();
-  updateCollapsedSummary();
   applyStartupSettings();
   listenExternalUpdates();
   backfillMissingAirRanges();

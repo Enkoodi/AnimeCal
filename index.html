@@ -8,15 +8,6 @@
 </head>
 <body>
   <div id="app">
-    <!-- 收起态：迷你条 -->
-    <div id="collapsed-view" class="collapsed-bar" hidden data-tauri-drag-region>
-      <div class="collapsed-drag" data-tauri-drag-region>
-        <span class="collapsed-title">番剧日历</span>
-        <span id="collapsed-summary" class="collapsed-summary">今日 0 集</span>
-      </div>
-      <button id="btn-expand" class="icon-btn no-drag" title="展开">&#9650;</button>
-    </div>
-
     <!-- 日历视图 -->
     <div id="calendar-view" class="view active">
       <div class="header" data-tauri-drag-region>
@@ -31,7 +22,6 @@
       <div class="toolbar">
         <button id="btn-settings" class="icon-btn" title="设置">&#9881;</button>
         <button id="btn-toggle-pin" class="icon-btn active pinned" title="已置顶（点击取消）" aria-pressed="true"><span class="pin-icon">📌</span></button>
-        <button id="btn-collapse" class="icon-btn" title="收起">&#9660;</button>
         <button id="btn-minimize" class="icon-btn" title="最小化到托盘">&#8211;</button>
         <button id="btn-close" class="icon-btn" title="关闭">&#10005;</button>
       </div>
@@ -95,3 +85,4 @@
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
+
