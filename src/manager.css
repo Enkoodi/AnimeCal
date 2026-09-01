@@ -122,3 +122,43 @@ body.manager-page .bangumi-item img {
 body.manager-page .bangumi-item-title {
   font-size: 13px;
 }
+
+/* 评分区间筛选 */
+.rating-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+}
+
+.rating-num {
+  width: 30px;
+  min-width: 30px;
+  padding: 4px 0;
+  text-align: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.rating-num:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.rating-num.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.rating-num.in-range {
+  background: rgba(233, 69, 96, 0.18);
+  border-color: var(--accent);
+  color: var(--accent-light);
+}

@@ -8,7 +8,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 
 let bangumiSeasonResults = {};
 let seasonTotal = 0;
-let seasonFilter = { weekday: 'all', minRating: 0, maxRating: Infinity, name: '' };
+let seasonFilter = { weekday: 'all', name: '' };
+let ratingSel = [];
 let enrichInProgress = false;
 
 function showToast(message, duration = 2200) {
@@ -242,14 +243,21 @@ function initSeasonFilters() {
       renderBangumiSeason();
     });
   });
-  document.getElementById('rating-filter').addEventListener('change', (e) => {
-    seasonFilter.minRating = parseFloat(e.target.value) || 0;
-    renderBangumiSeason();
+  document.querySelectorAll('#rating-scale .rating-num').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = parseInt(btn.dataset.rating, 10);
+      const idx = ratingSel.indexOf(v);
+      if (idx !== -1) {
+        ratingSel.splice(idx, 1);
+      } else {
+        if (ratingSel.length >= 2) ratingSel.shift();
+        ratingSel.push(v);
+      }
+      updateRatingScaleUI();
+      renderBangumiSeason();
+    });
   });
-  document.getElementById('max-rating-filter').addEventListener('change', (e) => {
-    seasonFilter.maxRating = e.target.value === '' ? Infinity : (parseFloat(e.target.value) || Infinity);
-    renderBangumiSeason();
-  });
+  updateRatingScaleUI();
   document.getElementById('name-filter').addEventListener('input', (e) => {
     seasonFilter.name = e.target.value.trim().toLowerCase();
     renderBangumiSeason();
@@ -348,6 +356,21 @@ async function enrichSeasonInfo() {
   if (updated > 0) renderBangumiSeason();
 }
 
+function updateRatingScaleUI() {
+  const sorted = [...ratingSel].sort((a, b) => a - b);
+  const lo = sorted[0];
+  const hi = sorted[sorted.length - 1];
+  document.querySelectorAll('#rating-scale .rating-num').forEach(btn => {
+    const v = parseInt(btn.dataset.rating, 10);
+    btn.classList.remove('selected', 'in-range');
+    if (ratingSel.includes(v)) {
+      btn.classList.add('selected');
+    } else if (ratingSel.length === 2 && v > lo && v < hi) {
+      btn.classList.add('in-range');
+    }
+  });
+}
+
 function getFilteredSeasonItems() {
   const allItems = [];
   for (const weekday in bangumiSeasonResults) {
@@ -357,11 +380,13 @@ function getFilteredSeasonItems() {
     if (seasonFilter.weekday !== 'all' && String(item.weekday) !== String(seasonFilter.weekday)) {
       return false;
     }
-    if (seasonFilter.minRating > 0 && (item.rating == null || item.rating < seasonFilter.minRating)) {
-      return false;
-    }
-    if (seasonFilter.maxRating !== Infinity && (item.rating == null || item.rating > seasonFilter.maxRating)) {
-      return false;
+    if (ratingSel.length) {
+      const sorted = [...ratingSel].sort((a, b) => a - b);
+      const lo = sorted[0];
+      const hi = sorted[sorted.length - 1] + 1;
+      if (item.rating == null || item.rating < lo || item.rating >= hi) {
+        return false;
+      }
     }
     if (seasonFilter.name) {
       const hay = `${item.name_cn || ''} ${item.name || ''}`.toLowerCase();

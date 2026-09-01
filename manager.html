@@ -46,24 +46,21 @@
             <button type="button" class="chip" data-weekday="6">六</button>
             <button type="button" class="chip" data-weekday="0">日</button>
           </div>
-          <div class="filter-row">
-            <label for="rating-filter">最低评分</label>
-            <select id="rating-filter">
-              <option value="0">不限</option>
-              <option value="6">6+</option>
-              <option value="7">7+</option>
-              <option value="8">8+</option>
-            </select>
-          </div>
-          <div class="filter-row">
-            <label for="max-rating-filter">最高评分</label>
-            <select id="max-rating-filter">
-              <option value="">不限</option>
-              <option value="3">≤3</option>
-              <option value="4">≤4</option>
-              <option value="5">≤5</option>
-              <option value="6">≤6</option>
-            </select>
+          <div class="filter-row rating-filter-row">
+            <label>评分区间</label>
+            <div class="rating-scale" id="rating-scale">
+              <button type="button" class="rating-num" data-rating="0">0</button>
+              <button type="button" class="rating-num" data-rating="1">1</button>
+              <button type="button" class="rating-num" data-rating="2">2</button>
+              <button type="button" class="rating-num" data-rating="3">3</button>
+              <button type="button" class="rating-num" data-rating="4">4</button>
+              <button type="button" class="rating-num" data-rating="5">5</button>
+              <button type="button" class="rating-num" data-rating="6">6</button>
+              <button type="button" class="rating-num" data-rating="7">7</button>
+              <button type="button" class="rating-num" data-rating="8">8</button>
+              <button type="button" class="rating-num" data-rating="9">9</button>
+              <button type="button" class="rating-num" data-rating="10">10</button>
+            </div>
           </div>
           <div class="filter-row">
             <label for="name-filter">名称筛选</label>
