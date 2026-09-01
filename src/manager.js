@@ -85,9 +85,18 @@ async function findBestBangumiMatch(item) {
     ? (() => { const d = new Date(item.yucStartDate + 'T00:00:00'); return Number.isNaN(d.getTime()) ? null : d.getTime(); })()
     : null;
 
-  // 完整名（含分段标识）可能 404，退化为去掉 P2/Part.2 后再搜
-  let hits = [];
+  // 名称匹配分两步：先按「原名」（日语原名，Bangumi 命中更准）搜，
+  // 原名搜不到再退回到「译名」（yuc 的中文名）。完整名可能 404，均退化去掉 P2/Part.2 再试。
+  const nameQueries = [];
+  for (const kw of buildSearchKeywords(item.originalName || '')) {
+    if (!nameQueries.includes(kw)) nameQueries.push(kw);
+  }
   for (const kw of buildSearchKeywords(item.name)) {
+    if (!nameQueries.includes(kw)) nameQueries.push(kw);
+  }
+
+  let hits = [];
+  for (const kw of nameQueries) {
     try {
       const found = await BangumiAPI.searchBangumi(kw, { large: true, maxResults: 8 });
       if (found && found.length) { hits = found; break; }

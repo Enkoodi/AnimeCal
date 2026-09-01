@@ -4,6 +4,7 @@
 import { Calendar } from './calendar.js';
 import * as AnimeStore from './anime.js';
 import * as BangumiAPI from './bangumi.js';
+import { invoke } from '@tauri-apps/api/core';
 
 const EXPANDED_SIZE = { width: 400, height: 480 };
 const COLLAPSED_SIZE = { width: 240, height: 48 };
@@ -227,8 +228,17 @@ function initSettings() {
   document.getElementById('auto-update').checked = settings.autoUpdate;
   document.getElementById('always-on-top').checked = settings.alwaysOnTop;
   document.getElementById('start-minimized').checked = settings.startMinimized;
+  document.getElementById('close-to-tray').checked = settings.closeToTray;
   refreshMyAnimeTags();
   syncPinButton(settings.alwaysOnTop);
+}
+
+async function syncCloseToTray(value) {
+  try {
+    await invoke('set_close_to_tray', { value });
+  } catch (err) {
+    console.warn('syncCloseToTray failed', err);
+  }
 }
 
 function syncPinButton(pinned) {
@@ -300,6 +310,11 @@ function bindEvents() {
   document.getElementById('start-minimized').addEventListener('change', (e) => {
     AnimeStore.updateSettings({ startMinimized: e.target.checked });
   });
+  document.getElementById('close-to-tray').addEventListener('change', (e) => {
+    const value = e.target.checked;
+    AnimeStore.updateSettings({ closeToTray: value });
+    syncCloseToTray(value);
+  });
 
   document.getElementById('btn-minimize').addEventListener('click', async () => {
     const win = getTauriWindow();
@@ -307,7 +322,7 @@ function bindEvents() {
   });
   document.getElementById('btn-close').addEventListener('click', async () => {
     const win = getTauriWindow();
-    if (win) await win.hide();
+    if (win) await win.close();
   });
   document.getElementById('btn-toggle-pin').addEventListener('click', () => {
     const pinned = document.getElementById('btn-toggle-pin').classList.contains('active');
@@ -348,6 +363,7 @@ function initWindowDragging() {
 async function applyStartupSettings() {
   const settings = AnimeStore.getSettings();
   await setAlwaysOnTop(settings.alwaysOnTop !== false);
+  await syncCloseToTray(settings.closeToTray === true);
   if (settings.startMinimized) {
     const win = getTauriWindow();
     if (win) {

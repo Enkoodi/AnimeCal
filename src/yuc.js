@@ -61,11 +61,46 @@ function deriveStartDate(year, seasonMonth, weekday, dateHint) {
 }
 
 /**
+ * 解析页面下方「新番介绍部分」的详细列表，得到每部的原名（title_jp_r）、
+ * 译名（title_cn_r）与参与员工（staff_r / cast_r），按封面图 URL 建索引。
+ * 周更表格里只有中文译名，原名只在详细列表里标注，借此给周更条目补上原名。
+ */
+function parseDetailList(doc) {
+  const map = new Map();
+  const jpEls = doc.querySelectorAll('[class*="title_jp_r"]');
+  for (const jp of jpEls) {
+    const originalName = (jp.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!originalName) continue;
+    const table = jp.closest('table');
+    if (!table) continue;
+    const cnEl = table.querySelector('[class*="title_cn_r"]');
+    const staffEl = table.querySelector('.staff_r');
+    const castEl = table.querySelector('.cast_r');
+    let cover = '';
+    // 结构：<div style="float:left"><img …></div><div><table>…</table></div>
+    const holder = table.parentElement;
+    const imgHolder = holder ? holder.previousElementSibling : null;
+    if (imgHolder) {
+      const img = imgHolder.querySelector('img');
+      if (img) cover = img.getAttribute('data-src') || img.getAttribute('src') || '';
+    }
+    map.set(cover, {
+      originalName,
+      name_cn: cnEl ? (cnEl.textContent || '').replace(/\s+/g, ' ').trim() : '',
+      staff: staffEl ? (staffEl.textContent || '').replace(/\s+/g, ' ').trim() : '',
+      cast: castEl ? (castEl.textContent || '').replace(/\s+/g, ' ').trim() : '',
+    });
+  }
+  return map;
+}
+
+/**
  * 解析季度页 HTML 为番剧列表
- * @returns {Array<{name, weekday, airTime, totalEpisodes, cover, yucStartDate, seasonLabel}>}
+ * @returns {Array<{name, weekday, airTime, totalEpisodes, cover, yucStartDate, seasonLabel, originalName}>}
  */
 export function parseSeasonHtml(html, year, seasonMonth) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
+  const detailMap = parseDetailList(doc);
   const items = [];
   let weekday = null;
 
@@ -85,6 +120,16 @@ export function parseSeasonHtml(html, year, seasonMonth) {
       if (!block) continue;
       const item = parseAnimeBlock(block, weekday, year, seasonMonth);
       if (item) items.push(item);
+    }
+  }
+
+  // 周更表格条目按封面图关联到详细列表，补上原名等信息（供搜索时优先按原名匹配）
+  for (const item of items) {
+    const detail = detailMap.get(item.cover);
+    if (detail) {
+      item.originalName = detail.originalName;
+      item.staff = detail.staff;
+      item.cast = detail.cast;
     }
   }
   return items;

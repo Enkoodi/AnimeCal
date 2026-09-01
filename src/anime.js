@@ -564,6 +564,7 @@ function createDefaultData() {
       autoUpdate: true,
       alwaysOnTop: true,
       startMinimized: false,
+      closeToTray: false,
     },
     lastFetch: null,
   };
