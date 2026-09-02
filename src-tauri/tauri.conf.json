@@ -10,27 +10,6 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
-    "windows": [
-      {
-        "label": "main",
-        "title": "番剧日历",
-        "width": 400,
-        "height": 480,
-        "minWidth": 240,
-        "minHeight": 48,
-        "resizable": false,
-        "maximizable": false,
-        "minimizable": true,
-        "closable": true,
-        "center": true,
-        "alwaysOnTop": true,
-        "decorations": false,
-        "transparent": false,
-        "focus": true,
-        "visible": true,
-        "skipTaskbar": false
-      }
-    ],
     "security": {
       "csp": "default-src 'self'; img-src 'self' data: https: http://lain.bgm.tv https://lain.bgm.tv; connect-src 'self' https:"
     },

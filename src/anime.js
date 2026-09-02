@@ -561,8 +561,8 @@ function createDefaultData() {
     version: 3,
     myAnime: [],
     settings: {
-      autoUpdate: true,
-      alwaysOnTop: true,
+      autoUpdate: false,
+      alwaysOnTop: false,
       startMinimized: false,
       closeToTray: false,
     },

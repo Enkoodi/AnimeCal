@@ -8,6 +8,8 @@
  */
 
 const SEASON_CACHE_KEY = 'anime_cal_season_cache';
+/** 缓存结构版本：解析逻辑变更时递增，旧版本缓存会被视为无效并重新抓取 */
+const SEASON_CACHE_VERSION = 2;
 const THUMB_DB_NAME = 'anime_cal_thumbs';
 const THUMB_STORE = 'thumbs';
 const THUMB_DB_VERSION = 1;
@@ -23,6 +25,7 @@ export function readSeasonCache() {
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || !data.byWeekday) return null;
+    if (data.version !== SEASON_CACHE_VERSION) return null;
     return data;
   } catch {
     return null;
@@ -66,6 +69,7 @@ export function writeSeasonCache(byWeekday, total) {
 
   try {
     localStorage.setItem(SEASON_CACHE_KEY, JSON.stringify({
+      version: SEASON_CACHE_VERSION,
       byWeekday: clean,
       total,
       fetchedAt: Date.now(),

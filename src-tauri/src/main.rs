@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{TrayIconBuilder, MouseButton, MouseButtonState},
-    Manager, WindowEvent,
+    Manager, WindowEvent, WebviewUrl, WebviewWindowBuilder,
 };
 
 #[derive(Default)]
@@ -24,8 +24,33 @@ fn main() {
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![set_close_to_tray])
         .setup(|app| {
-            let window = app.get_webview_window("main").unwrap();
-            let _ = window.set_always_on_top(true);
+            // 便携数据目录：追番数据（localStorage / 封面缩略图）随 exe 一起携带，
+            // 存到 exe 同目录下的 .data 文件夹，而非系统 AppData。
+            #[cfg(target_os = "windows")]
+            let data_dir = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|d| d.join(".data")));
+
+            let mut wb = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                .title("番剧日历")
+                .inner_size(400.0, 480.0)
+                .min_inner_size(240.0, 48.0)
+                .resizable(false)
+                .maximizable(false)
+                .minimizable(true)
+                .closable(true)
+                .center()
+                .decorations(false)
+                .focused(true)
+                .visible(true);
+
+            #[cfg(target_os = "windows")]
+            if let Some(dir) = data_dir {
+                wb = wb.data_directory(dir);
+            }
+
+            let window = wb.build()?;
+            let _ = window.set_always_on_top(false);
             
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let toggle_i = MenuItem::with_id(app, "toggle", "显示/隐藏", true, None::<&str>)?;

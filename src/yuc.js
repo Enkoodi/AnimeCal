@@ -55,7 +55,7 @@ function deriveStartDate(year, seasonMonth, weekday, dateHint) {
   if (dateHint) {
     // 页面里标注的具体日期，如 "8/12~"，与季度同年
     m = dateHint.month;
-    d = Math.min(28, dateHint.day);
+    d = dateHint.day;
   }
   return `${y}-${pad2(m)}-${pad2(d)}`;
 }
@@ -76,6 +76,13 @@ function parseDetailList(doc) {
     const cnEl = table.querySelector('[class*="title_cn_r"]');
     const staffEl = table.querySelector('.staff_r');
     const castEl = table.querySelector('.cast_r');
+    // 下方详细列表里标注的具体首播日期，如 "8/12周三晚间"
+    const broadcastEl = table.querySelector('.broadcast_r');
+    let airDate = null;
+    if (broadcastEl) {
+      const dm = (broadcastEl.textContent || '').match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+      if (dm) airDate = { month: Number(dm[1]), day: Number(dm[2]) };
+    }
     let cover = '';
     // 结构：<div style="float:left"><img …></div><div><table>…</table></div>
     const holder = table.parentElement;
@@ -89,6 +96,7 @@ function parseDetailList(doc) {
       name_cn: cnEl ? (cnEl.textContent || '').replace(/\s+/g, ' ').trim() : '',
       staff: staffEl ? (staffEl.textContent || '').replace(/\s+/g, ' ').trim() : '',
       cast: castEl ? (castEl.textContent || '').replace(/\s+/g, ' ').trim() : '',
+      airDate,
     });
   }
   return map;
@@ -123,13 +131,18 @@ export function parseSeasonHtml(html, year, seasonMonth) {
     }
   }
 
-  // 周更表格条目按封面图关联到详细列表，补上原名等信息（供搜索时优先按原名匹配）
+  // 周更表格条目按封面图关联到详细列表，补上原名、具体播出日期等信息
   for (const item of items) {
     const detail = detailMap.get(item.cover);
     if (detail) {
       item.originalName = detail.originalName;
       item.staff = detail.staff;
       item.cast = detail.cast;
+      // 详细列表标注的具体首播日期（broadcast_r）优先于「第一个星期几」推算
+      if (detail.airDate) {
+        item.yucStartDate = deriveStartDate(year, seasonMonth, item.weekday, detail.airDate);
+        item.hasRealDate = true;
+      }
     }
   }
   return items;
