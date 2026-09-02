@@ -5,6 +5,7 @@ import * as AnimeStore from './anime.js';
 import * as BangumiAPI from './bangumi.js';
 import * as YucAPI from './yuc.js';
 import * as Cache from './cache.js';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 let bangumiSeasonResults = {};
@@ -29,10 +30,11 @@ function showToast(message, duration = 2200) {
 
 async function notifyMainWindow() {
   try {
-    await window.__TAURI__?.event?.emit?.('anime-data-changed');
+    await invoke('notify_all_windows');
   } catch (err) {
-    console.warn('emit anime-data-changed failed', err);
+    console.warn('notify_all_windows failed', err);
   }
+  // 保留 storage 事件作为兜底（不同窗口 localStorage 路径一致时也能触发刷新）
   try {
     localStorage.setItem('anime_cal_ping', String(Date.now()));
   } catch {
@@ -411,7 +413,8 @@ async function loadThumbToItem(item) {
     return;
   }
   try {
-    const res = await fetch(item.cover, { cache: 'no-store' });
+    // hdslb 图床有 Referer 防盗链，带上会 403；必须显式去掉 Referer
+    const res = await fetch(item.cover, { cache: 'no-store', referrerPolicy: 'no-referrer' });
     if (!res.ok) return;
     const blob = await res.blob();
     thumb = await downscaleToThumb(blob);
@@ -566,7 +569,7 @@ function renderBangumiSeason() {
       ].filter(Boolean).join(' · ');
       const coverSrc = item.thumb || item.cover || '';
       return `<div class="bangumi-item ${alreadyAdded ? 'selected' : ''}" data-key="${item.key}">
-        <img src="${coverSrc}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'" onload="this.style.display=''"/>
+        <img src="${coverSrc}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'" onload="this.style.display=''"/>
         <div class="bangumi-item-info">
           <div class="bangumi-item-title">${item.name}</div>
           <div class="bangumi-item-meta">${meta}</div>
@@ -680,6 +683,21 @@ async function closeManagerWindow() {
   }
 }
 
+async function listenExternalUpdates() {
+  try {
+    await window.__TAURI__?.event?.listen?.('anime-data-changed', () => {
+      renderBangumiSeason();
+    });
+  } catch (err) {
+    console.warn('manager listen anime-data-changed failed', err);
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'anime_cal_ping' || e.key === 'anime_cal_data') {
+      renderBangumiSeason();
+    }
+  });
+}
+
 function init() {
   initTabs();
   initSeasonFilters();
@@ -691,6 +709,7 @@ function init() {
     loadSeason(true);
   });
   loadSeason();
+  listenExternalUpdates();
 }
 
 document.addEventListener('DOMContentLoaded', init);

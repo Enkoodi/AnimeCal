@@ -6,10 +6,6 @@ import * as AnimeStore from './anime.js';
 import * as BangumiAPI from './bangumi.js';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-
-const MANAGER_SIZE = { width: 760, height: 680 };
-const FOLLOWING_SIZE = { width: 460, height: 600 };
-
 let calendar = null;
 let currentView = 'calendar';
 let currentDetailDate = null;
@@ -21,6 +17,22 @@ function getTauriWindow() {
     return null;
   }
 }
+
+/**
+ * 通过 Rust 后端向所有窗口广播数据变化事件。
+ * 子窗口直接 emit 的 Tauri 事件只在本窗口内传播，主窗口收不到；
+ * 必须经由 Rust 广播，才能让 main / manager / following 任意窗口都刷新 UI。
+ */
+async function broadcastDataChanged() {
+  try {
+    await invoke('notify_all_windows');
+  } catch (err) {
+    console.warn('notify_all_windows failed', err);
+  }
+}
+
+// 兼容性导出：manager / following 窗口会通过 import 使用此函数
+export { broadcastDataChanged };
 
 function switchView(viewName) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -96,85 +108,36 @@ function showAnimeDetail(date) {
   switchView('detail');
 }
 
-/** 打开独立的「管理番剧」大窗口 */
+/** 打开独立的「添加番剧」大窗口。由 Rust 后端创建，保证 data_directory 与主窗口一致。 */
 async function openManagerWindow() {
-  const WebviewWindow = window.__TAURI__?.webviewWindow?.WebviewWindow;
-  if (!WebviewWindow) {
-    // 浏览器预览兜底：新标签打开
+  // 浏览器预览兜底（无 Tauri 环境时）
+  if (!window.__TAURI__) {
     window.open('./manager.html', 'anime-manager', 'width=760,height=680');
     return;
   }
 
   try {
-    const existing = await WebviewWindow.getByLabel('manager');
-    if (existing) {
-      await existing.show();
-      await existing.setFocus();
-      return;
-    }
-  } catch {
-    /* 不存在则新建 */
-  }
-
-  const win = new WebviewWindow('manager', {
-    url: 'manager.html',
-    title: '添加番剧',
-    width: MANAGER_SIZE.width,
-    height: MANAGER_SIZE.height,
-    minWidth: 640,
-    minHeight: 520,
-    resizable: true,
-    decorations: true,
-    alwaysOnTop: true,
-    center: true,
-    focus: true,
-    visible: true,
-  });
-
-  win.once?.('tauri://error', (e) => {
-    console.error('manager window error', e);
+    await invoke('open_manager_window');
+  } catch (err) {
+    console.error('open_manager_window failed', err);
     showToast('无法打开添加番剧窗口');
-  });
+  }
 }
 
-/** 打开「管理番剧」窗口：只显示我已追的番剧，可取消追番并按集标记状态 */
+/** 打开「管理番剧」窗口：只显示我已追的番剧，可取消追番并按集标记状态。由 Rust 后端创建，保证 data_directory 与主窗口一致。 */
 async function openFollowingWindow() {
-  const WebviewWindow = window.__TAURI__?.webviewWindow?.WebviewWindow;
-  if (!WebviewWindow) {
+  // 浏览器预览兜底（无 Tauri 环境时）
+  if (!window.__TAURI__) {
     window.open('./following.html', 'anime-following', 'width=460,height=600');
     return;
   }
 
   try {
-    const existing = await WebviewWindow.getByLabel('following');
-    if (existing) {
-      await existing.show();
-      await existing.setFocus();
-      return;
-    }
-  } catch {
-    /* 不存在则新建 */
-  }
-
-  const win = new WebviewWindow('following', {
-    url: 'following.html',
-    title: '管理番剧',
-    width: FOLLOWING_SIZE.width,
-    height: FOLLOWING_SIZE.height,
-    minWidth: 360,
-    minHeight: 480,
-    resizable: true,
-    decorations: true,
-    alwaysOnTop: true,
-    center: true,
-    focus: true,
-    visible: true,
-  });
-
-  win.once?.('tauri://error', (e) => {
-    console.error('following window error', e);
+    await invoke('open_following_window');
+  } catch (err) {
+    console.error('open_following_window failed', err);
     showToast('无法打开管理番剧窗口');
-  });
+  }
 }
 
 function initSettings() {
@@ -366,6 +329,7 @@ async function listenExternalUpdates() {
   try {
     await window.__TAURI__?.event?.listen?.('anime-data-changed', () => {
       refreshMainUi();
+      showToast('番剧列表已更新');
     });
   } catch (err) {
     console.warn('listen anime-data-changed failed', err);
@@ -373,6 +337,7 @@ async function listenExternalUpdates() {
   window.addEventListener('storage', (e) => {
     if (e.key === 'anime_cal_ping' || e.key === 'anime_cal_data') {
       refreshMainUi();
+      showToast('番剧列表已更新');
     }
   });
 }

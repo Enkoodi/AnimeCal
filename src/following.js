@@ -4,6 +4,7 @@
  * - 卡片下方显示集数格子：绿=已看、白=未看、灰=未更新，点击可切换已看
  */
 import * as AnimeStore from './anime.js';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 const CELL_STATE = {
@@ -19,10 +20,11 @@ function episodeCellState(item) {
 
 async function notifyMainWindow() {
   try {
-    await window.__TAURI__?.event?.emit?.('anime-data-changed');
+    await invoke('notify_all_windows');
   } catch (err) {
-    console.warn('emit anime-data-changed failed', err);
+    console.warn('notify_all_windows failed', err);
   }
+  // 保留 storage 事件作为兜底（不同窗口 localStorage 路径一致时也能触发刷新）
   try {
     localStorage.setItem('anime_cal_ping', String(Date.now()));
   } catch {
@@ -96,9 +98,25 @@ async function closeWindow() {
   }
 }
 
+async function listenExternalUpdates() {
+  try {
+    await window.__TAURI__?.event?.listen?.('anime-data-changed', () => {
+      render();
+    });
+  } catch (err) {
+    console.warn('following listen anime-data-changed failed', err);
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'anime_cal_ping' || e.key === 'anime_cal_data') {
+      render();
+    }
+  });
+}
+
 function init() {
   document.getElementById('btn-close-following').addEventListener('click', closeWindow);
   render();
+  listenExternalUpdates();
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -15,5 +15,21 @@ tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# ============================================================
+# 构建须知（重要，勿删）
+# ------------------------------------------------------------
+# Tauri v2 用 `cfg!(not(feature = "custom-protocol"))` 判定开发/生产模式
+# （见 tauri-macros 的 context.rs：dev: cfg!(not(feature = "custom-protocol"))）。
+# 生产构建必须启用 custom-protocol，否则程序被当作 dev 模式：
+# 不内嵌前端资源，转而加载 devUrl (http://localhost:1420)，
+# 运行时会报 “localhost 拒绝连接 / ERR_CONNECTION_REFUSED”。
+#
+# 正确构建命令（二选一，均不触发 NSIS 打包）：
+#   1. cargo build --release --features custom-protocol
+#   2. npm run tauri build -- --no-bundle
+#
+# 禁止裸跑 `cargo build --release`（会漏掉该特性，重复触发上述错误）。
+# 本应用不需要 NSIS 安装包，只需裸 exe（dist 内嵌，数据存 exe 同目录 .data）。
+# ============================================================
 [features]
 custom-protocol = ["tauri/custom-protocol"]
