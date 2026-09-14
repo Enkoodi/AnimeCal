@@ -46,7 +46,8 @@ export class Calendar {
     const updateStats = getUpdateCountsForMonth(year, month);
     const firstDayOfMonth = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startWeekday = firstDayOfMonth.getDay();
+    // 周一起始：getDay() 中 0=周日，转换为 0=周一（(0+6)%7=6 即周日落到最后一列）
+    const startWeekday = (firstDayOfMonth.getDay() + 6) % 7;
     const prevMonthDays = new Date(year, month, 0).getDate();
     const today = new Date();
     const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
@@ -69,6 +70,8 @@ export class Calendar {
       const hasEpisodes = s.episodes > 0;
       // 当天有集且全部已看 → “x集”文字变灰
       const allWatched = hasEpisodes && s.unwatched === 0;
+      // 有未看集时显示「未看集数」，全部看完时仍显示「当天总集数」
+      const displayCount = s.unwatched > 0 ? s.unwatched : s.episodes;
       // 绿点仅在「该日已到达且仍有未看集」时显示；未到达（晚于今天）的日期虽显示集数但不亮绿点
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const isReached = new Date(year, month, day) <= todayStart;
@@ -80,7 +83,7 @@ export class Calendar {
 
       html += `<div class="${classes}" data-day="${day}" data-year="${year}" data-month="${month}">
         <span class="day-number">${day}</span>
-        ${hasEpisodes ? `<span class="day-update-count${allWatched ? ' all-watched' : ''}">${s.episodes}集</span>` : ''}
+        ${hasEpisodes ? `<span class="day-update-count${allWatched ? ' all-watched' : ''}">${displayCount}集</span>` : ''}
         ${showDot ? '<span class="update-indicator"></span>' : ''}
       </div>`;
     }
