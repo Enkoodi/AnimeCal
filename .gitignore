@@ -7,6 +7,16 @@ src-tauri/gen/
 # 本地快捷方式（个人电脑用，不入库）
 *.lnk
 
+# 运行时数据（便携模式，存 exe 同目录的 .data）
+.data/
+
+# AI 助手工作区（记忆 / 会话缓存，不入库）
+.workbuddy/
+
+# 环境变量与密钥
+.env
+.env.local
+
 # 系统文件
 .DS_Store
 Thumbs.db
@@ -14,6 +24,7 @@ desktop.ini
 
 # 日志
 *.log
+npm-debug.log*
 
 # 编辑器
 .vscode/
