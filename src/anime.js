@@ -732,6 +732,12 @@ export function setLastFetch(ts = Date.now()) {
   saveData(data);
 }
 
+/** 上次成功刷新番剧信息的时间戳（毫秒），从未刷新过返回 null */
+export function getLastFetch() {
+  const ts = loadData().lastFetch;
+  return typeof ts === 'number' && ts > 0 ? ts : null;
+}
+
 export function getAnimeForDate(date) {
   const key = formatDateOnly(date);
   const result = [];

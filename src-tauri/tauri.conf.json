@@ -11,7 +11,7 @@
   },
   "app": {
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https: http://lain.bgm.tv https://lain.bgm.tv; connect-src 'self' https:"
+      "csp": "default-src 'self'; img-src 'self' data: https: http://lain.bgm.tv https://lain.bgm.tv; connect-src 'self' https: http://yuc.wiki"
     },
     "withGlobalTauri": true
   },

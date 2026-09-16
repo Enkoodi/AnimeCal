@@ -6,30 +6,16 @@
   <title>管理番剧</title>
   <link rel="stylesheet" href="./src/styles.css" />
   <link rel="stylesheet" href="./src/manager.css" />
+  <script src="./bg-boot.js" data-bg-target="manager"></script>
 </head>
 <body class="manager-page">
   <div id="manager-app">
-    <header class="manager-header">
-      <div class="manager-header-text">
-        <h1>添加番剧</h1>
-      </div>
-      <button id="btn-close-manager" class="action-btn manager-close-btn no-drag">关闭</button>
-    </header>
-
     <div class="tabs manager-tabs">
       <button class="tab-btn active" data-tab="bangumi">自动搜索</button>
       <button class="tab-btn" data-tab="manual">手动添加</button>
     </div>
 
     <div id="tab-bangumi" class="tab-content active manager-pane">
-      <div class="form-group">
-        <div class="search-box">
-          <input type="text" id="bangumi-search" placeholder="搜索番剧名称..." />
-          <button id="btn-search-bangumi" class="action-btn">搜索</button>
-        </div>
-      </div>
-      <div id="bangumi-results" class="bangumi-results manager-results"></div>
-
       <div class="filter-section manager-filter">
         <div class="selection-bar">
           <h4>筛选番剧</h4>

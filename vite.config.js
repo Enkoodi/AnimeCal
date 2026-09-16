@@ -21,6 +21,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         manager: resolve(__dirname, 'manager.html'),
         following: resolve(__dirname, 'following.html'),
+        crop: resolve(__dirname, 'crop.html'),
       },
     },
   },

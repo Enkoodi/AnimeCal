@@ -1,0 +1,236 @@
+/* 「自定义背景」裁剪窗口 */
+
+body.crop-page {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+#crop-app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.crop-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.crop-titles { min-width: 0; }
+
+.crop-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crop-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.crop-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.crop-stage-wrap {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  display: flex;
+}
+
+.crop-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #0a0c16;
+}
+
+#crop-canvas {
+  position: absolute;
+  inset: 0;
+  /* 必须显式给尺寸：canvas 是替换元素，只写 inset:0 时它的 CSS 宽度会取自
+     width 属性（背面像素数 = 舞台尺寸 × devicePixelRatio），
+    在 125%/150% 缩放的屏幕上会被放大，导致画在 canvas 上的遮罩与 DOM 取景框错位。 */
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* 光标由 JS 按命中区域切换（框内=抓取、把手=缩放、框外=默认） */
+  cursor: default;
+}
+
+/* 取景框：框外由 canvas 蒙版压暗，框内保持原样，方便精确取景。
+   白线 + 外侧深色描边，保证在亮图/暗图上都能看清边界。 */
+.crop-frame {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.crop-frame[hidden] { display: none; }
+
+/* 四角把手：长按拖动即按取景框中心缩放 */
+.crop-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.crop-handle.tl { left: -6px; top: -6px; }
+.crop-handle.tr { right: -6px; top: -6px; }
+.crop-handle.bl { left: -6px; bottom: -6px; }
+.crop-handle.br { right: -6px; bottom: -6px; }
+
+.crop-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.crop-empty[hidden] { display: none; }
+.crop-empty-icon { font-size: 28px; opacity: 0.65; }
+.crop-empty-text { font-size: 13px; color: var(--text-secondary); }
+
+.crop-side {
+  width: 236px;
+  flex: 0 0 auto;
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.crop-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.crop-card-title {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.crop-preview {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  line-height: 0;
+}
+
+.crop-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.crop-zoom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.crop-zoom-label { font-size: 11px; color: var(--text-secondary); }
+.crop-zoom-value { font-size: 11px; color: var(--text-primary); font-weight: 600; }
+
+#crop-zoom {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.crop-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.crop-btn-row .crop-btn { flex: 1; }
+
+.crop-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.crop-footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+/* 按钮自带底色与边框：不依赖「透明底 + 亮字」，换任何背景都看得清 */
+.crop-btn {
+  width: auto;
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.crop-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.crop-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.crop-btn.primary:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+  color: #fff;
+}
+
+.crop-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

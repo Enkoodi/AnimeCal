@@ -9,7 +9,7 @@
 
 const SEASON_CACHE_KEY = 'anime_cal_season_cache';
 /** 缓存结构版本：解析逻辑变更时递增，旧版本缓存会被视为无效并重新抓取 */
-const SEASON_CACHE_VERSION = 2;
+const SEASON_CACHE_VERSION = 4;
 const THUMB_DB_NAME = 'anime_cal_thumbs';
 const THUMB_STORE = 'thumbs';
 const THUMB_DB_VERSION = 1;
@@ -32,15 +32,23 @@ export function readSeasonCache() {
   }
 }
 
-export function isCacheFresh(cache, ttl = SEASON_CACHE_TTL) {
-  return !!(cache && cache.fetchedAt && (Date.now() - cache.fetchedAt) < ttl);
+/**
+ * 缓存是否可用。传入 seasons（当前应展示的季度键，如 '202607,202610'）时，
+ * 跨季会立即失效——例如 10 月 1 日本季由 202607 变为 202610，
+ * 若不判断季度，旧季数据还会继续显示最多 12 小时。
+ */
+export function isCacheFresh(cache, ttl = SEASON_CACHE_TTL, seasons = null) {
+  if (!cache || !cache.fetchedAt || (Date.now() - cache.fetchedAt) >= ttl) return false;
+  if (seasons && cache.seasons !== seasons) return false;
+  return true;
 }
 
 /**
  * 写入季度元数据缓存，返回本次「应保留」的封面 URL 集合（本季 + 上一季的并集），
  * 供缩略图清理使用。写入时剔除 thumb / __ 前缀等瞬态字段，避免本地存储膨胀。
+ * @param {string} seasons 本次抓取时的季度键（如 '202607,202610'），用于跨季失效判断
  */
-export function writeSeasonCache(byWeekday, total) {
+export function writeSeasonCache(byWeekday, total, seasons = '') {
   const covers = [];
   const seenCover = new Set();
   const clean = {};
@@ -74,6 +82,7 @@ export function writeSeasonCache(byWeekday, total) {
       total,
       fetchedAt: Date.now(),
       covers,
+      seasons,
     }));
   } catch (err) {
     console.warn('写入季度缓存失败', err);

@@ -5,8 +5,8 @@ import * as AnimeStore from './anime.js';
 import * as BangumiAPI from './bangumi.js';
 import * as YucAPI from './yuc.js';
 import * as Cache from './cache.js';
+import { initBackground } from './background.js';
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 let bangumiSeasonResults = {};
 let seasonTotal = 0;
@@ -14,6 +14,11 @@ let seasonFilter = { weekday: 'all', name: '' };
 let ratingSel = [];
 let enrichInProgress = false;
 let thumbImgEls = new Map();
+
+/** 当前应展示的季度键（本季+下季）。写进缓存，跨季后旧缓存立即失效 */
+function currentSeasons() {
+  return YucAPI.currentSeasonKeys().join(',');
+}
 
 function showToast(message, duration = 2200) {
   let toast = document.querySelector('.toast');
@@ -259,7 +264,7 @@ async function toggleOrAddSeasonItem(el, item) {
       if (payload.id != null) item.bangumiId = payload.id;
       if (payload.name_cn) item.name_cn = payload.name_cn;
       markBangumiItemSelected(el, true);
-      const { keepKeys } = Cache.writeSeasonCache(bangumiSeasonResults, seasonTotal);
+      const { keepKeys } = Cache.writeSeasonCache(bangumiSeasonResults, seasonTotal, currentSeasons());
       Cache.pruneThumbs(keepKeys);
       await notifyMainWindow();
     }
@@ -314,10 +319,10 @@ function initSeasonFilters() {
 async function loadSeason(forceRefresh = false) {
   const container = document.getElementById('bangumi-season');
 
-  // 先读本地缓存：有且未过期则直接渲染，打开更快、离线也能用
+  // 先读本地缓存：有且未过期（且季度未变）则直接渲染，打开更快、离线也能用
   if (!forceRefresh) {
     const cached = Cache.readSeasonCache();
-    if (cached && Cache.isCacheFresh(cached)) {
+    if (cached && Cache.isCacheFresh(cached, undefined, currentSeasons())) {
       bangumiSeasonResults = cached.byWeekday || {};
       seasonTotal = cached.total || 0;
       if (seasonTotal > 0) {
@@ -336,7 +341,7 @@ async function loadSeason(forceRefresh = false) {
     AnimeStore.setLastFetch();
     if (total > 0) {
       renderBangumiSeason();
-      const { keepKeys } = Cache.writeSeasonCache(byWeekday, total);
+      const { keepKeys } = Cache.writeSeasonCache(byWeekday, total, currentSeasons());
       Cache.pruneThumbs(keepKeys);
       loadThumbnails();
       enrichSeasonInfo();
@@ -486,7 +491,7 @@ async function enrichSeasonInfo() {
   }
   if (updated > 0) {
     renderBangumiSeason();
-    const { keepKeys } = Cache.writeSeasonCache(bangumiSeasonResults, seasonTotal);
+    const { keepKeys } = Cache.writeSeasonCache(bangumiSeasonResults, seasonTotal, currentSeasons());
     Cache.pruneThumbs(keepKeys);
   }
 }
@@ -554,6 +559,8 @@ function renderBangumiSeason() {
 
   const myAnime = AnimeStore.getMyAnime();
   const weekdayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  // 列表在换季前会同时含本季 + 下季，给下季条目加个小标记便于区分
+  const nextSeasonKey = YucAPI.currentSeasonKeys()[1] || null;
 
   container.innerHTML = `<div class="selection-bar"><span>显示 ${items.length} / ${seasonTotal} 部</span></div>` +
     items.map(item => {
@@ -561,8 +568,13 @@ function renderBangumiSeason() {
       const startLabel = item.startDate
         ? formatShortDate(item.startDate)
         : (item.yucStartDate ? formatShortDate(item.yucStartDate) : (item.seasonLabel || ''));
+      const seasonTag = nextSeasonKey && item.seasonKey === nextSeasonKey
+        ? `<span class="season-tag">${Number(nextSeasonKey.slice(4))}月番</span>`
+        : '';
+      // weekday 可能为 null（网络放送等无固定档期），此时不显示星期
+      const weekdayLabel = item.weekday == null ? '未定档' : weekdayNames[item.weekday % 7];
       const meta = [
-        weekdayNames[item.weekday % 7],
+        weekdayLabel,
         startLabel,
         item.airTime || '',
         item.totalEpisodes ? `全${item.totalEpisodes}话` : '',
@@ -572,7 +584,7 @@ function renderBangumiSeason() {
         <img src="${coverSrc}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'" onload="this.style.display=''"/>
         <div class="bangumi-item-info">
           <div class="bangumi-item-title">${item.name}</div>
-          <div class="bangumi-item-meta">${meta}</div>
+          <div class="bangumi-item-meta">${seasonTag}${meta}</div>
         </div>
         ${alreadyAdded ? '<span class="added-mark">✓</span>' : ''}
         ${item.rating != null ? `<span class="rating-badge">★${item.rating}</span>` : '<span class="rating-badge rating-pending">--</span>'}
@@ -589,49 +601,6 @@ function renderBangumiSeason() {
       await toggleOrAddSeasonItem(el, item);
     });
   });
-}
-
-function initBangumiSearch() {
-  document.getElementById('btn-search-bangumi').addEventListener('click', performSearch);
-  document.getElementById('bangumi-search').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') performSearch();
-  });
-
-  async function performSearch() {
-    const keyword = document.getElementById('bangumi-search').value.trim();
-    if (!keyword) return;
-    const container = document.getElementById('bangumi-results');
-    container.innerHTML = '<div class="loading"><div class="spinner"></div>搜索中...</div>';
-    try {
-      const results = await BangumiAPI.searchBangumi(keyword);
-      if (results.length === 0) {
-        container.innerHTML = '<div class="loading">未找到相关番剧</div>';
-        return;
-      }
-      const myAnimeIds = new Set(AnimeStore.getMyAnime().map(a => a.bangumiId).filter(Boolean));
-      container.innerHTML = results.map(item =>
-        `<div class="bangumi-item ${myAnimeIds.has(item.id) ? 'selected' : ''}" data-id="${item.id}">
-          <img src="${item.image}" alt="${item.name_cn}" onerror="this.style.display='none'"/>
-          <div class="bangumi-item-info">
-            <div class="bangumi-item-title">${item.name_cn}</div>
-            <div class="bangumi-item-meta">${item.air_date || '未知日期'}</div>
-          </div>
-          ${myAnimeIds.has(item.id) ? '<span class="added-mark">✓</span>' : ''}
-        </div>`
-      ).join('');
-
-      container.querySelectorAll('.bangumi-item').forEach(el => {
-        el.addEventListener('click', async () => {
-          const id = parseInt(el.dataset.id, 10);
-          const searchItem = results.find(i => i.id === id);
-          if (!searchItem) return;
-          await toggleOrAddSeasonItem(el, searchItem);
-        });
-      });
-    } catch (error) {
-      container.innerHTML = `<div class="loading">搜索失败: ${error.message}</div>`;
-    }
-  }
 }
 
 function initManualAdd() {
@@ -668,21 +637,6 @@ function initManualAdd() {
   });
 }
 
-async function closeManagerWindow() {
-  try {
-    await getCurrentWindow().close();
-    return;
-  } catch (err) {
-    console.warn('close manager via tauri failed', err);
-  }
-  // 兜底：避免 window.close() 仅白屏，改用 hide
-  try {
-    await getCurrentWindow().hide();
-  } catch (err2) {
-    console.warn('hide manager via tauri failed', err2);
-  }
-}
-
 async function listenExternalUpdates() {
   try {
     await window.__TAURI__?.event?.listen?.('anime-data-changed', () => {
@@ -699,11 +653,10 @@ async function listenExternalUpdates() {
 }
 
 function init() {
+  initBackground('manager');
   initTabs();
   initSeasonFilters();
-  initBangumiSearch();
   initManualAdd();
-  document.getElementById('btn-close-manager').addEventListener('click', closeManagerWindow);
   document.getElementById('btn-refresh-season').addEventListener('click', () => {
     showToast('正在刷新季度列表...');
     loadSeason(true);

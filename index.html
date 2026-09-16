@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>番剧日历</title>
   <link rel="stylesheet" href="./src/styles.css" />
+  <script src="./bg-boot.js" data-bg-target="main"></script>
 </head>
 <body>
   <div id="app">
@@ -60,7 +61,17 @@
             <input type="checkbox" id="auto-update" />
             自动更新番剧信息
           </label>
+          <div id="auto-update-hint" class="setting-hint"></div>
           <button id="btn-fetch-bangumi" class="action-btn">手动刷新信息</button>
+        </div>
+        <div class="setting-group">
+          <h3>个性化</h3>
+          <div id="bg-rows" class="bg-rows"></div>
+          <label class="bg-scrim-row" for="bg-scrim">
+            <span class="bg-scrim-label">背景遮罩</span>
+            <input type="range" id="bg-scrim" min="0" max="80" step="5" value="45" />
+            <span id="bg-scrim-value" class="bg-scrim-value">45%</span>
+          </label>
         </div>
         <div class="setting-group">
           <h3>窗口</h3>

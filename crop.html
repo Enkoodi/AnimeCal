@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自定义背景</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <link rel="stylesheet" href="./src/crop.css" />
+</head>
+<body class="crop-page">
+  <div id="crop-app">
+    <header class="crop-header" data-tauri-drag-region>
+      <div class="crop-titles">
+        <div class="crop-title" data-tauri-drag-region>设置「<span id="crop-target-name">主窗口</span>」的背景</div>
+        <div class="crop-sub" id="crop-target-meta" data-tauri-drag-region></div>
+      </div>
+      <button type="button" id="btn-pick" class="crop-btn">选择图片</button>
+    </header>
+
+    <main class="crop-body">
+      <div class="crop-stage-wrap">
+        <div id="crop-stage" class="crop-stage">
+          <canvas id="crop-canvas"></canvas>
+          <div id="crop-frame" class="crop-frame" hidden>
+            <span class="crop-handle tl"></span>
+            <span class="crop-handle tr"></span>
+            <span class="crop-handle bl"></span>
+            <span class="crop-handle br"></span>
+          </div>
+          <div id="crop-empty" class="crop-empty">
+            <div class="crop-empty-icon">🖼</div>
+            <div class="crop-empty-text">还没有选择图片</div>
+            <button type="button" id="btn-pick-empty" class="crop-btn primary">选择图片</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="crop-side">
+        <div class="crop-card">
+          <div class="crop-card-title">窗口预览</div>
+          <div class="crop-preview"><canvas id="crop-preview-canvas"></canvas></div>
+        </div>
+
+        <div class="crop-card">
+          <label class="crop-zoom">
+            <span class="crop-zoom-label">缩放</span>
+            <span class="crop-zoom-value" id="crop-zoom-value">100%</span>
+          </label>
+          <input type="range" id="crop-zoom" min="100" max="400" step="1" value="100" />
+          <div class="crop-btn-row">
+            <button type="button" id="btn-fit" class="crop-btn">铺满</button>
+            <button type="button" id="btn-center" class="crop-btn">居中</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="crop-footer">
+      <div class="crop-footer-right">
+        <button type="button" id="btn-cancel" class="crop-btn">取消</button>
+        <button type="button" id="btn-save" class="crop-btn primary" disabled>保存</button>
+      </div>
+    </footer>
+  </div>
+
+  <input type="file" id="crop-file" accept="image/*" hidden />
+  <script type="module" src="./src/crop.js"></script>
+</body>
+</html>

@@ -6,17 +6,26 @@
   <title>管理番剧</title>
   <link rel="stylesheet" href="./src/styles.css" />
   <link rel="stylesheet" href="./src/manager.css" />
+  <script src="./bg-boot.js" data-bg-target="following"></script>
 </head>
 <body class="manager-page follow-page">
   <div id="following-app">
-    <header class="manager-header">
-      <div class="manager-header-text">
-        <h1>管理番剧</h1>
-      </div>
-      <button id="btn-close-following" class="action-btn manager-close-btn no-drag">关闭</button>
-    </header>
+    <div class="follow-toolbar">
+      <button type="button" id="btn-clear-finished" class="follow-clear-btn" disabled>清除已完成番剧</button>
+    </div>
 
     <div id="following-list" class="following-list"></div>
+  </div>
+
+  <div id="clear-dialog" class="dialog-overlay" hidden>
+    <div class="dialog-card">
+      <div class="dialog-title">确定清除以下番剧吗？</div>
+      <div class="dialog-list" id="clear-dialog-list"></div>
+      <div class="dialog-actions">
+        <button type="button" id="btn-clear-cancel" class="dialog-btn dialog-btn-ghost">取消</button>
+        <button type="button" id="btn-clear-confirm" class="dialog-btn dialog-btn-danger">清除</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="./src/following.js"></script>

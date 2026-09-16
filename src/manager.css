@@ -2,45 +2,22 @@
 body.manager-page {
   width: 100vw;
   height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  /* 大窗口整体不滚动：撑满视口，溢出交给内部番剧列表自己滚 */
+  overflow: hidden;
+  display: flex;
   background: var(--bg-primary);
 }
 
 #manager-app {
-  min-height: 100%;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
   padding: 16px 18px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   box-sizing: border-box;
-}
-
-.manager-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.manager-header h1 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.manager-header p {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.manager-close-btn {
-  width: auto;
-  padding: 8px 14px;
-  flex-shrink: 0;
 }
 
 .manager-tabs {
@@ -50,30 +27,46 @@ body.manager-page {
 .manager-pane {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
-.manager-results {
-  max-height: 180px;
+/* 激活的面板用纵向弹性布局，把剩余高度让给内部番剧列表 */
+.manager-pane.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 手动添加表单较高：窗口被拖到很小时允许面板内部滚动，避免内容被直接裁掉 */
+#tab-manual {
   overflow-y: auto;
-  margin-bottom: 8px;
+  overflow-x: hidden;
 }
 
 .manager-season {
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: none;
-  min-height: 220px;
-  max-height: calc(100vh - 320px);
   overflow-y: auto;
 }
 
 .manager-filter {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   margin-top: 8px;
   padding-top: 12px;
 }
 
 .manager-filter .selection-bar {
+  flex: 0 0 auto;
   border-bottom: none;
   margin-bottom: 4px;
   padding: 0;
+}
+
+.manager-filter .filter-controls {
+  flex: 0 0 auto;
 }
 
 .manager-filter h4 {

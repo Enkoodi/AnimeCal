@@ -6,6 +6,14 @@
  */
 
 const YUC_BASE = 'https://yuc.wiki';
+/**
+ * 备用协议。yuc.wiki 的 TLS 证书已于 2026-07-29 过期（TrustAsia DV，签发 2026-05-01，
+ * 站点未自动续期），WebView2 / 系统证书校验会直接拒绝 https 请求
+ * （ERR_CERT_DATE_INVALID / certificate has expired）。站点未强制跳转 https，
+ * 故 https 失败时退回 http，保证新番列表仍能加载。
+ * 需同步在 tauri.conf.json 的 CSP connect-src 中放行 http://yuc.wiki。
+ */
+const YUC_BASE_HTTP = 'http://yuc.wiki';
 const WEEKDAY_CN = {
   周一: 1, 周二: 2, 周三: 3, 周四: 4, 周五: 5, 周六: 6, 周日: 0,
   星期一: 1, 星期二: 2, 星期三: 3, 星期四: 4, 星期五: 5, 星期六: 6, 星期天: 0,
@@ -24,9 +32,9 @@ export function seasonKey(year, month) {
   return `${year}${pad2(month)}`;
 }
 
-/** 抓取某季度页面 HTML；下季尚未发布（404/空）返回 null，网络错误则抛异常 */
-export async function fetchSeasonHtml(year, month) {
-  const url = `${YUC_BASE}/${seasonKey(year, month)}/`;
+/** 用指定协议抓一次季度页；页面不存在返回 null，网络/证书错误抛异常 */
+async function fetchSeasonHtmlOnce(base, year, month) {
+  const url = `${base}/${seasonKey(year, month)}/`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     if (res.status === 404) return null;
@@ -34,9 +42,25 @@ export async function fetchSeasonHtml(year, month) {
   }
   const text = await res.text();
   if (!text) return null;
-  // 站点对不存在的季度返回 GitHub Pages 默认 404 页（可能仍是 200）
-  if (/File not found|404/.test(text.slice(0, 800)) && !/div_date/.test(text)) return null;
+  // 以「是否含番剧结构」判定页面是否有效：
+  // 不存在的季度会返回 404 页（新版 Hexo 站可能仍返回 200）；
+  // 旧版结构标记 .div_date，新版（2026-10 起）只剩 .title_main_r 介绍列表。
+  if (!/div_date|title_main_r/.test(text)) return null;
   return text;
+}
+
+/** 抓取某季度页面 HTML；下季尚未发布（404/空）返回 null。
+ *  先走 https，因 yuc.wiki 证书已过期会失败，此时自动退回 http。 */
+export async function fetchSeasonHtml(year, month) {
+  let firstErr = null;
+  for (const base of [YUC_BASE, YUC_BASE_HTTP]) {
+    try {
+      return await fetchSeasonHtmlOnce(base, year, month);
+    } catch (err) {
+      if (!firstErr) firstErr = err;
+    }
+  }
+  throw new Error(`${firstErr ? firstErr.message : '网络错误'}（https 与 http 均失败）`);
 }
 
 function matchWeekday(text) {
@@ -44,20 +68,22 @@ function matchWeekday(text) {
   return m ? WEEKDAY_CN[m[1]] : null;
 }
 
-/** 由季度月 + 星期推导一个「备选首播日」（Bangumi 不可用时按此往后推整季） */
+/** 由季度月 + 星期推导一个「备选首播日」（Bangumi 不可用时按此往后推整季）
+ *  weekday 为 null（网络放送等无固定星期）且无具体日期时返回 null */
 function deriveStartDate(year, seasonMonth, weekday, dateHint) {
-  let y = year;
-  let m = seasonMonth;
-  let d = 1;
+  if (dateHint) {
+    // 页面里标注的具体日期，如 "8/12~"。
+    // 跨年修正：10 月页会标注次年 1 月的日期，1 月页会标注上一年 12 月的日期。
+    let y = year;
+    if (seasonMonth >= 10 && dateHint.month <= 3) y = year + 1;
+    else if (seasonMonth <= 3 && dateHint.month >= 10) y = year - 1;
+    return `${y}-${pad2(dateHint.month)}-${pad2(dateHint.day)}`;
+  }
+  if (weekday == null) return null;
   const monthStart = new Date(year, seasonMonth - 1, 1);
   const firstWeekday = monthStart.getDay();
-  d = 1 + ((weekday - firstWeekday + 7) % 7);
-  if (dateHint) {
-    // 页面里标注的具体日期，如 "8/12~"，与季度同年
-    m = dateHint.month;
-    d = dateHint.day;
-  }
-  return `${y}-${pad2(m)}-${pad2(d)}`;
+  const d = 1 + ((weekday - firstWeekday + 7) % 7);
+  return `${year}-${pad2(seasonMonth)}-${pad2(d)}`;
 }
 
 /**
@@ -108,6 +134,17 @@ function parseDetailList(doc) {
  */
 export function parseSeasonHtml(html, year, seasonMonth) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
+  // 旧版页面（2026-07 及以前）：按星期分栏的周更表格，信息更全（含集数与具体时刻）
+  if (doc.querySelector('.div_date')) {
+    const items = parseWeekdayTable(doc, year, seasonMonth);
+    if (items.length) return items;
+  }
+  // 新版页面（2026-10 起）：周更表格已被移除，只剩「新番介绍」扁平列表
+  return parseFlatList(doc, year, seasonMonth);
+}
+
+/** 旧版结构：解析「按星期分栏」的周更表格（div_date / date2 / date_title） */
+function parseWeekdayTable(doc, year, seasonMonth) {
   const detailMap = parseDetailList(doc);
   const items = [];
   let weekday = null;
@@ -192,8 +229,104 @@ function parseAnimeBlock(block, weekday, year, seasonMonth) {
     cover,
     yucStartDate: deriveStartDate(year, seasonMonth, weekday, dateHint),
     hasRealDate: dateHint != null,
+    seasonKey: seasonKey(year, seasonMonth),
     seasonLabel: `${year}年${pad2(seasonMonth)}月`,
   };
+}
+
+/** 取元素文本并压平空白；<br> 视为折行（转空格）避免标题粘连，元素不存在返回空串 */
+function textOf(el) {
+  if (!el) return '';
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('br').forEach(br => br.replaceWith(' '));
+  return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+/** 条目封面：<div style="float:left"><img data-src></div> 是表格容器的前一个兄弟节点 */
+function coverOfTable(table) {
+  const holder = table.parentElement;
+  const imgHolder = holder ? holder.previousElementSibling : null;
+  const img = imgHolder ? imgHolder.querySelector('img') : null;
+  return img ? (img.getAttribute('data-src') || img.getAttribute('src') || '') : '';
+}
+
+/**
+ * 解析新版条目的播出标注，如 "10/3周六深夜"、"9/25网络放送"、"周二深夜"。
+ * 新版页面不再给出具体时刻（旧版 .imgtext4 才有）与总集数，故只取日期与星期。
+ */
+function parseBroadcast(text) {
+  const t = String(text || '');
+  const dm = t.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+  return {
+    raw: t,
+    weekday: matchWeekday(t),
+    date: dm ? { month: Number(dm[1]), day: Number(dm[2]) } : null,
+  };
+}
+
+/**
+ * 新版结构（2026-10 起）：页面只保留「新番介绍」扁平列表，旧的周更表格
+ * （.date2 星期表头 / .div_date 番剧块）已全部移除，因此按 td.title_main_r
+ * 逐条解析，星期与首播日从条目的 .broadcast_r 文本中取。
+ */
+function parseFlatList(doc, year, seasonMonth) {
+  const items = [];
+  const keyCount = new Map();
+
+  for (const cell of doc.querySelectorAll('td[class*="title_main_r"]')) {
+    const table = cell.closest('table');
+    if (!table) continue;
+    // 标题类名带序号后缀（title_cn_r / title_cn_r1 / title_jp_r2 …），用前缀匹配
+    const name = textOf(table.querySelector('[class*="title_cn_r"]'));
+    const originalName = textOf(table.querySelector('[class*="title_jp_r"]'));
+    const title = name || originalName;
+    if (!title) continue;
+
+    // 同名条目（跨季重播等）加序号，避免 data-key 冲突
+    const dup = keyCount.get(title) || 0;
+    keyCount.set(title, dup + 1);
+    const key = dup ? `${title} (${dup + 1})` : title;
+
+    const bc = parseBroadcast(textOf(table.querySelector('.broadcast_r')));
+    items.push({
+      key,
+      name: title,
+      originalName,
+      weekday: bc.weekday, // 网络放送等无固定星期，为 null
+      airTime: '', // 新版页面不再给出具体时刻，交由 Bangumi 补全
+      totalEpisodes: null, // 新版页面不再给出集数，交由 Bangumi 补全
+      cover: coverOfTable(table),
+      broadcastRaw: bc.raw,
+      yucStartDate: deriveStartDate(year, seasonMonth, bc.weekday, bc.date),
+      hasRealDate: bc.date != null,
+      staff: textOf(table.querySelector('[class*="staff_r"]')),
+      cast: textOf(table.querySelector('[class*="cast_r"]')),
+      seasonKey: seasonKey(year, seasonMonth),
+      seasonLabel: `${year}年${pad2(seasonMonth)}月`,
+    });
+  }
+  return items;
+}
+
+/**
+ * 当前应展示的季度：本季 + 下季。
+ * yuc.wiki 会在下季开播前提前发布页面，那段时间两季都展示；
+ * 下季开始后「本季」自动前移，于是只剩新一季（下下季通常尚未发布 → 返回 null 被跳过）。
+ */
+function seasonPairs(now = new Date()) {
+  const year = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const qStart = quarterStartMonth(currentMonth);
+  const nextMonth = qStart + 3;
+  return [
+    { year, month: qStart },
+    { year: nextMonth > 12 ? year + 1 : year, month: nextMonth > 12 ? 1 : nextMonth },
+  ];
+}
+
+/** 当前应展示的季度键，如 ['202607','202610']；供缓存判断是否跨季失效 */
+export function currentSeasonKeys(now = new Date()) {
+  return seasonPairs(now).map(s => seasonKey(s.year, s.month));
 }
 
 /**
@@ -201,14 +334,7 @@ function parseAnimeBlock(block, weekday, year, seasonMonth) {
  * @returns {Promise<{byWeekday: Record<number,Array>, total:number}>}
  */
 export async function loadSeasonAnime(now = new Date()) {
-  const year = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  const qStart = quarterStartMonth(currentMonth);
-  const nextMonth = qStart + 3;
-  const seasons = [
-    { year, month: qStart },
-    { year: nextMonth > 12 ? year + 1 : year, month: nextMonth > 12 ? 1 : nextMonth },
-  ];
+  const seasons = seasonPairs(now);
 
   const byWeekday = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
   let total = 0;
@@ -225,7 +351,9 @@ export async function loadSeasonAnime(now = new Date()) {
     if (!html) continue;
     const list = parseSeasonHtml(html, y, m);
     for (const it of list) {
-      const arr = byWeekday[it.weekday] || (byWeekday[it.weekday] = []);
+      // weekday 为 null（网络放送等无固定档期）时归入 unknown 桶，仍参与渲染与统计
+      const bucket = it.weekday == null ? 'unknown' : it.weekday;
+      const arr = byWeekday[bucket] || (byWeekday[bucket] = []);
       arr.push(it);
       total++;
     }

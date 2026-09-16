@@ -4,8 +4,8 @@
  * - 卡片下方显示集数格子：绿=已看、白=未看、灰=未更新，点击可切换已看
  */
 import * as AnimeStore from './anime.js';
+import { initBackground } from './background.js';
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 const CELL_STATE = {
   watched: 'watched',
@@ -32,9 +32,63 @@ async function notifyMainWindow() {
   }
 }
 
+/** 「已全部看完」= 该番每一集都已标记已看（未播出的集不可能已看，因此等价于完结且追完） */
+function getFinishedAnime() {
+  return AnimeStore.getMyAnime().filter(anime => {
+    const eps = AnimeStore.getEpisodeStatusList(anime);
+    return eps.length > 0 && eps.every(e => e.watched);
+  });
+}
+
+/** 没有可清除的番剧时把按钮置灰，避免点了没反应 */
+function syncClearButton() {
+  const btn = document.getElementById('btn-clear-finished');
+  const count = getFinishedAnime().length;
+  btn.disabled = count === 0;
+  btn.title = count ? `清除 ${count} 部已全部看完的番剧` : '没有已全部看完的番剧';
+}
+
+/** 待清除列表，确认时才真正删除 */
+let pendingClear = [];
+
+function openClearDialog() {
+  pendingClear = getFinishedAnime();
+  if (pendingClear.length === 0) return;
+
+  document.getElementById('clear-dialog-list').innerHTML = pendingClear.map(anime => {
+    const eps = AnimeStore.getEpisodeStatusList(anime);
+    const watched = eps.filter(e => e.watched).length;
+    return `<div class="dialog-item">
+      <img class="dialog-item-cover" src="${anime.cover || ''}" alt="${anime.name}" onerror="this.style.visibility='hidden'"/>
+      <div class="dialog-item-info">
+        <div class="dialog-item-name">${anime.name}</div>
+        <div class="dialog-item-sub">已看 ${watched}/${eps.length} 集</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('clear-dialog').hidden = false;
+}
+
+function closeClearDialog() {
+  document.getElementById('clear-dialog').hidden = true;
+  pendingClear = [];
+}
+
+async function confirmClear() {
+  const removed = pendingClear.filter(anime => {
+    const result = AnimeStore.removeMyAnime(anime.id);
+    return result && result.success;
+  }).length;
+  closeClearDialog();
+  if (removed > 0) await notifyMainWindow();
+  render();
+}
+
 function render() {
   const container = document.getElementById('following-list');
   const list = AnimeStore.getMyAnime();
+  syncClearButton();
 
   if (list.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">TV</div>还没有追番，点击主窗口设置里的「添加番剧」开始关注</div>';
@@ -83,21 +137,6 @@ function render() {
   });
 }
 
-async function closeWindow() {
-  try {
-    await getCurrentWindow().close();
-    return;
-  } catch (err) {
-    console.warn('close following via tauri failed', err);
-  }
-  // 兜底：避免 window.close() 仅白屏，改用 hide
-  try {
-    await getCurrentWindow().hide();
-  } catch (err2) {
-    console.warn('hide following via tauri failed', err2);
-  }
-}
-
 async function listenExternalUpdates() {
   try {
     await window.__TAURI__?.event?.listen?.('anime-data-changed', () => {
@@ -114,7 +153,20 @@ async function listenExternalUpdates() {
 }
 
 function init() {
-  document.getElementById('btn-close-following').addEventListener('click', closeWindow);
+  initBackground('following');
+  document.getElementById('btn-clear-finished').addEventListener('click', openClearDialog);
+  document.getElementById('btn-clear-cancel').addEventListener('click', closeClearDialog);
+  document.getElementById('btn-clear-confirm').addEventListener('click', confirmClear);
+
+  // 点遮罩空白处或按 Esc 也能取消
+  const overlay = document.getElementById('clear-dialog');
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeClearDialog();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.hidden) closeClearDialog();
+  });
+
   render();
   listenExternalUpdates();
 }

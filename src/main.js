@@ -4,11 +4,29 @@
 import { Calendar } from './calendar.js';
 import * as AnimeStore from './anime.js';
 import * as BangumiAPI from './bangumi.js';
+import { deleteSource } from './bg-store.js';
+import {
+  BG_TARGETS,
+  applyBackground,
+  getBackground,
+  getScrim,
+  initBackground,
+  notifyBackgroundChanged,
+  openCropWindow,
+  removeBackground,
+  setScrim,
+} from './background.js';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 let calendar = null;
 let currentView = 'calendar';
 let currentDetailDate = null;
+
+/**
+ * 「自动更新番剧信息」的检查间隔：距上次成功刷新不足该时长则跳过，避免每次启动都打 Bangumi。
+ * 番剧的播出区间/集数变化很慢，一周一次足够；等不及的用户可以随时点「手动刷新信息」。
+ */
+const AUTO_UPDATE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 function getTauriWindow() {
   try {
@@ -147,7 +165,64 @@ function initSettings() {
   document.getElementById('start-minimized').checked = settings.startMinimized;
   document.getElementById('close-to-tray').checked = settings.closeToTray;
   refreshMyAnimeTags();
+  refreshBackgroundRows();
+  syncScrimControl();
+  updateAutoUpdateHint();
   syncPinButton(settings.alwaysOnTop);
+}
+
+/* ===== 个性化：自定义背景 ===== */
+
+/** 渲染三个窗口的背景缩略图；点整行进入该窗口的裁剪界面，点 × 移除 */
+function refreshBackgroundRows() {
+  const container = document.getElementById('bg-rows');
+  if (!container) return;
+  container.innerHTML = Object.entries(BG_TARGETS).map(([key, info]) => {
+    const bg = getBackground(key);
+    // 缩略图按各窗口自己的比例画，一眼能看出主窗口是竖的、添加番剧是横的
+    const thumbWidth = Math.round((52 * info.width) / info.height);
+    return `<div class="bg-row" data-target="${key}" title="${bg ? '点击重新裁剪' : '点击选择图片'}">
+      <div class="bg-row-thumb" style="width:${thumbWidth}px">${bg ? `<img src="${bg.data}" alt="" />` : '&#43;'}</div>
+      <div class="bg-row-info">
+        <div class="bg-row-name">${info.label}</div>
+        <div class="bg-row-sub">${bg ? '已设置' : '未设置'} · ${info.width}×${info.height}</div>
+      </div>
+      <div class="bg-row-actions">${bg ? '<button type="button" class="bg-mini-btn" data-act="clear" title="移除背景">&times;</button>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+/** 遮罩浓度滑杆（0-80%）：拖动时实时预览，松手后写入并广播给其它窗口 */
+function syncScrimControl() {
+  const slider = document.getElementById('bg-scrim');
+  if (!slider) return;
+  const percent = Math.round(getScrim() * 100);
+  slider.value = String(percent);
+  document.getElementById('bg-scrim-value').textContent = `${percent}%`;
+}
+
+async function clearBackgroundFor(target) {
+  const result = removeBackground(target);
+  if (!result.success) {
+    showToast(result.message);
+    return;
+  }
+  // 连原图一起清掉：留着它下次打开裁剪窗口还会看到一张已经用不上的旧图
+  try {
+    await deleteSource(target);
+  } catch (err) {
+    console.warn('删除背景原图失败', err);
+  }
+  // 本窗口自己不会收到自己的广播，需要手动重绘
+  applyBackground('main');
+  await notifyBackgroundChanged();
+  refreshBackgroundRows();
+  showToast(`已移除「${BG_TARGETS[target]?.label || ''}」的背景`);
+}
+
+async function onBackgroundChangedFromElsewhere() {
+  refreshBackgroundRows();
+  syncScrimControl();
 }
 
 async function syncCloseToTray(value) {
@@ -218,8 +293,41 @@ function bindEvents() {
   document.getElementById('btn-add-anime').addEventListener('click', () => openManagerWindow());
   document.getElementById('btn-fetch-bangumi').addEventListener('click', () => manualRefreshAnimeInfo());
 
-  document.getElementById('auto-update').addEventListener('change', (e) => {
+  // 「个性化」：点行进入裁剪窗口、点 × 移除；遮罩滑杆即时预览
+  document.getElementById('bg-rows').addEventListener('click', (e) => {
+    const row = e.target.closest('.bg-row');
+    if (!row) return;
+    const target = row.dataset.target;
+    if (e.target.closest('[data-act="clear"]')) {
+      clearBackgroundFor(target);
+      return;
+    }
+    openCropWindow(target);
+  });
+
+  const scrimSlider = document.getElementById('bg-scrim');
+  scrimSlider.addEventListener('input', (e) => {
+    const percent = Number(e.target.value);
+    document.getElementById('bg-scrim-value').textContent = `${percent}%`;
+    document.documentElement.style.setProperty('--bg-scrim', String(percent / 100));
+  });
+  scrimSlider.addEventListener('change', async () => {
+    const percent = Number(scrimSlider.value);
+    setScrim(percent / 100);
+    applyBackground('main');
+    await notifyBackgroundChanged();
+  });
+
+  document.getElementById('auto-update').addEventListener('change', async (e) => {
     AnimeStore.updateSettings({ autoUpdate: e.target.checked });
+    const result = await tryAutoUpdate(true);
+    const messages = {
+      fresh: '番剧信息已是最新',
+      ok: '番剧信息已更新',
+      fail: '刷新失败，请检查网络连接',
+    };
+    if (messages[result]) showToast(messages[result]);
+    else if (result === 'disabled') showToast('已关闭自动更新');
   });
   document.getElementById('always-on-top').addEventListener('change', (e) => {
     setAlwaysOnTop(e.target.checked);
@@ -303,14 +411,16 @@ async function backfillMissingAirRanges() {
   showToast('播出时间已更新');
 }
 
-/** 手动刷新：强制从 Bangumi 重新拉取所有已追番剧的最新播出/集数信息 */
-async function manualRefreshAnimeInfo() {
+/**
+ * 刷新所有已追番剧的播出信息（Bangumi 详情 → 本地播出区间/集数/时刻）。
+ * 只要有任意一部成功，就更新 lastFetch 时间戳，作为自动更新的计时基准。
+ * @param {boolean} silent 静默模式：不提示进度，用于开机自动更新
+ * @returns {Promise<number>} 成功刷新的番剧数量
+ */
+async function refreshAllAnimeInfo({ silent = false } = {}) {
   const list = AnimeStore.getMyAnime().filter(a => a.bangumiId);
-  if (!list.length) {
-    showToast('暂无已追番剧可刷新');
-    return;
-  }
-  showToast(`正在刷新 ${list.length} 部番剧信息...`, 3500);
+  if (!list.length) return 0;
+  if (!silent) showToast(`正在刷新 ${list.length} 部番剧信息...`, 3500);
   let ok = 0;
   for (const anime of list) {
     try {
@@ -318,11 +428,59 @@ async function manualRefreshAnimeInfo() {
       AnimeStore.backfillAirRange(anime.id, detail);
       ok++;
     } catch (err) {
-      console.warn('手动刷新失败', anime.name, err);
+      console.warn('刷新番剧信息失败', anime.name, err);
     }
   }
-  refreshMainUi();
+  if (ok > 0) {
+    AnimeStore.setLastFetch();
+    refreshMainUi();
+  }
+  return ok;
+}
+
+/** 手动刷新：强制从 Bangumi 重新拉取所有已追番剧的最新播出/集数信息 */
+async function manualRefreshAnimeInfo() {
+  const list = AnimeStore.getMyAnime().filter(a => a.bangumiId);
+  if (!list.length) {
+    showToast('暂无已追番剧可刷新');
+    return;
+  }
+  const ok = await refreshAllAnimeInfo();
+  updateAutoUpdateHint();
   showToast(ok > 0 ? `已更新 ${ok} 部番剧信息` : '刷新失败，请检查网络连接');
+}
+
+/**
+ * 自动更新流程：「自动更新番剧信息」开关开启，且距上次刷新超过 AUTO_UPDATE_TTL 时才真正联网。
+ * @param {boolean} interactive 由用户手动开启开关触发时为 true：非静默刷新，让用户看到反馈
+ * @returns {Promise<'disabled'|'fresh'|'ok'|'fail'>}
+ */
+async function tryAutoUpdate(interactive = false) {
+  if (!AnimeStore.getSettings().autoUpdate) return 'disabled';
+  const last = AnimeStore.getLastFetch();
+  if (last && Date.now() - last < AUTO_UPDATE_TTL) return 'fresh';
+  const ok = await refreshAllAnimeInfo({ silent: !interactive });
+  updateAutoUpdateHint();
+  return ok > 0 ? 'ok' : 'fail';
+}
+
+/** 把「上次更新」渲染到设置界面，让开关的实际效果可见（只显示状态，不写机制说明） */
+function updateAutoUpdateHint() {
+  const el = document.getElementById('auto-update-hint');
+  if (!el) return;
+  const last = AnimeStore.getLastFetch();
+  el.textContent = last ? `上次更新：${formatRelativeTime(last)}` : '尚未更新过';
+}
+
+/** 时间戳 → 「刚刚 / 3 小时前 / 2 天前 / 具体日期」 */
+function formatRelativeTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60 * 1000) return '刚刚';
+  if (diff < 3600 * 1000) return `${Math.floor(diff / 60000)} 分钟前`;
+  if (diff < 24 * 3600 * 1000) return `${Math.floor(diff / 3600000)} 小时前`;
+  if (diff < 7 * 24 * 3600 * 1000) return `${Math.floor(diff / 86400000)} 天前`;
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 async function listenExternalUpdates() {
@@ -342,13 +500,18 @@ async function listenExternalUpdates() {
   });
 }
 
-function init() {
+async function init() {
   initCalendar();
   bindEvents();
   initWindowDragging();
+  // 背景先应用：裁剪窗口保存后会广播 background-changed，这里同步刷新缩略图
+  initBackground('main', onBackgroundChangedFromElsewhere);
   applyStartupSettings();
   listenExternalUpdates();
-  backfillMissingAirRanges();
+  // 串行执行，顺序不能反：自动更新是全量刷新（含补全缺失项），先跑它，backfill 随后基本无事可做，
+  // 避免同一部番剧被连续请求 Bangumi 两次。
+  if (await tryAutoUpdate() === 'ok') showToast('番剧信息已自动更新');
+  await backfillMissingAirRanges();
   console.log('AnimeCal initialized');
 }
 

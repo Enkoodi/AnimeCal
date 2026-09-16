@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "identifier": "com.animecal.desktop",
   "description": "番剧日历桌面应用",
-  "windows": ["main", "manager", "following"],
+  "windows": ["main", "manager", "following", "crop-main", "crop-manager", "crop-following"],
   "permissions": [
     "core:default",
     "core:window:allow-close",
