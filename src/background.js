@@ -6,9 +6,21 @@
  *   这里只负责读写数据、调用它重绘、以及在跨窗口变更时通知各页面
  */
 import { invoke } from '@tauri-apps/api/core';
+import {
+  DEFAULT_THEME,
+  THEMES,
+  applyAlexandritePalette,
+  applyTheme,
+  clearAlexandrite,
+  loadImage,
+} from './theme.js';
+import { applyAccentField, clearAccentField } from './accent-field.js';
 
 export const BG_STORAGE_KEY = 'anime_cal_backgrounds';
 export const DEFAULT_SCRIM = 0.45;
+/** 磨砂玻璃的模糊半径（px）。0 = 退化成纯半透明，30 = 完全糊成色块 */
+export const DEFAULT_BLUR = 24;
+export const MAX_BLUR = 30;
 /** 缩放的上下限：100% = 恰好铺满取景框（再小就会露出空白），400% = 放大 4 倍 */
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 4;
@@ -39,7 +51,7 @@ export function outputSizeFor(target) {
 }
 
 function emptyStore() {
-  return { scrim: DEFAULT_SCRIM, windows: {} };
+  return { scrim: DEFAULT_SCRIM, blur: DEFAULT_BLUR, theme: DEFAULT_THEME, windows: {} };
 }
 
 export function loadBackgrounds() {
@@ -49,6 +61,9 @@ export function loadBackgrounds() {
     const data = JSON.parse(raw);
     return {
       scrim: typeof data.scrim === 'number' ? data.scrim : DEFAULT_SCRIM,
+      // 上限改过之后，早先存的更大值要收回来（滑块最大值也只有 MAX_BLUR）
+      blur: typeof data.blur === 'number' ? Math.min(MAX_BLUR, Math.max(0, data.blur)) : DEFAULT_BLUR,
+      theme: THEMES[data.theme] ? data.theme : DEFAULT_THEME,
       windows: data.windows && typeof data.windows === 'object' ? data.windows : {},
     };
   } catch {
@@ -112,14 +127,56 @@ export function setScrim(value) {
   return persist(store);
 }
 
+/** 玻璃模糊半径（px） */
+export function getTheme() {
+  return loadBackgrounds().theme;
+}
+
+export function setTheme(key) {
+  const store = loadBackgrounds();
+  store.theme = THEMES[key] ? key : DEFAULT_THEME;
+  return persist(store);
+}
+
+export function getBlur() {
+  return loadBackgrounds().blur;
+}
+
+export function setBlur(value) {
+  const store = loadBackgrounds();
+  const px = Math.min(MAX_BLUR, Math.max(0, Math.round(Number(value) || 0)));
+  store.blur = px;
+  return persist(store);
+}
+
 /**
  * 把「本窗口」的背景应用到页面上。
  * @param {'main'|'manager'|'following'} target 本窗口的标识（注意不是被编辑的那个窗口）
  */
+let applied = null; // { target, size, data }：同一张图 + 同一尺寸不重复取色
+
 export function applyBackground(target) {
   if (typeof window.__applyStoredBackground === 'function') {
     window.__applyStoredBackground(target);
   }
+  // 主题挂在 html[data-theme] 上；变石还要按「本窗口」的背景图现算颜色
+  const theme = applyTheme(getTheme());
+  const bg = getBackground(target);
+  if (theme !== 'alexandrite' || !bg || !bg.data) {
+    applied = null;
+    clearAlexandrite();
+    clearAccentField();
+    return;
+  }
+  const size = `${document.documentElement.clientWidth}x${document.documentElement.clientHeight}`;
+  if (applied && applied.target === target && applied.size === size && applied.data === bg.data) return;
+  applied = { target, size, data: bg.data };
+  const key = `${target}|${size}|${bg.updatedAt || 0}`;
+  loadImage(bg.data).then((img) => {
+    if (!applied || applied.data !== bg.data) return; // 期间又换了背景，丢弃这次
+    applyAlexandritePalette(img); // 整窗兜底色（石座 / 玻璃 / 未被逐个取色的元素）
+    applyAccentField(img, key); // 按钮逐个按位置取色
+  });
 }
 
 /** 通知其它窗口背景已变化（本窗口不会收到自己的广播） */

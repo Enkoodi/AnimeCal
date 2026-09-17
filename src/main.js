@@ -9,13 +9,18 @@ import {
   BG_TARGETS,
   applyBackground,
   getBackground,
+  getBlur,
   getScrim,
+  getTheme,
   initBackground,
   notifyBackgroundChanged,
   openCropWindow,
   removeBackground,
+  setBlur,
   setScrim,
+  setTheme,
 } from './background.js';
+import { THEMES, themeButtonHtml } from './theme.js';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 let calendar = null;
@@ -165,13 +170,29 @@ function initSettings() {
   document.getElementById('start-minimized').checked = settings.startMinimized;
   document.getElementById('close-to-tray').checked = settings.closeToTray;
   refreshMyAnimeTags();
+  refreshThemeButtons();
   refreshBackgroundRows();
-  syncScrimControl();
+  syncBackgroundControls();
   updateAutoUpdateHint();
   syncPinButton(settings.alwaysOnTop);
 }
 
 /* ===== 个性化：自定义背景 ===== */
+
+/** 主题选择：四套配色，选中态写回 localStorage 后广播给其它窗口 */
+function refreshThemeButtons() {
+  const container = document.getElementById('theme-grid');
+  if (!container) return;
+  const current = getTheme();
+  container.innerHTML = themeButtonHtml(
+    Object.entries(THEMES).map(([key, info]) => ({
+      key,
+      label: info.label,
+      swatch: info.swatch,
+      active: key === current,
+    }))
+  );
+}
 
 /** 渲染三个窗口的背景缩略图；点整行进入该窗口的裁剪界面，点 × 移除 */
 function refreshBackgroundRows() {
@@ -192,13 +213,20 @@ function refreshBackgroundRows() {
   }).join('');
 }
 
-/** 遮罩浓度滑杆（0-80%）：拖动时实时预览，松手后写入并广播给其它窗口 */
-function syncScrimControl() {
-  const slider = document.getElementById('bg-scrim');
-  if (!slider) return;
-  const percent = Math.round(getScrim() * 100);
-  slider.value = String(percent);
-  document.getElementById('bg-scrim-value').textContent = `${percent}%`;
+/** 遮罩浓度（0-80%）与玻璃模糊度（0-60px）两个滑杆：拖动时实时预览，松手后写入并广播给其它窗口 */
+function syncBackgroundControls() {
+  const scrim = document.getElementById('bg-scrim');
+  if (scrim) {
+    const percent = Math.round(getScrim() * 100);
+    scrim.value = String(percent);
+    document.getElementById('bg-scrim-value').textContent = `${percent}%`;
+  }
+  const blur = document.getElementById('bg-blur');
+  if (blur) {
+    const px = Math.round(getBlur());
+    blur.value = String(px);
+    document.getElementById('bg-blur-value').textContent = `${px}px`;
+  }
 }
 
 async function clearBackgroundFor(target) {
@@ -221,8 +249,9 @@ async function clearBackgroundFor(target) {
 }
 
 async function onBackgroundChangedFromElsewhere() {
+  refreshThemeButtons();
   refreshBackgroundRows();
-  syncScrimControl();
+  syncBackgroundControls();
 }
 
 async function syncCloseToTray(value) {
@@ -233,16 +262,16 @@ async function syncCloseToTray(value) {
   }
 }
 
+/** 置顶按钮：图标是同一枚 SVG（换形状会和其它三个按钮不统一），
+    两种状态只靠按钮底色（.pinned 的强调色底）与图标不透明度区分，见 styles.css */
 function syncPinButton(pinned) {
   const btn = document.getElementById('btn-toggle-pin');
-  btn.classList.toggle('active', !!pinned);
-  btn.classList.toggle('pinned', !!pinned);
-  btn.title = pinned ? '已置顶（点击取消）' : '未置顶（点击置顶）';
-  btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
-  btn.innerHTML = pinned
-    ? '<span class="pin-icon">📌</span>'
-    : '<span class="pin-icon pin-off">📍</span>';
-  document.getElementById('always-on-top').checked = !!pinned;
+  const on = !!pinned;
+  btn.classList.toggle('active', on);
+  btn.classList.toggle('pinned', on);
+  btn.title = on ? '已置顶（点击取消）' : '未置顶（点击置顶）';
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  document.getElementById('always-on-top').checked = on;
 }
 
 function refreshMyAnimeTags() {
@@ -305,6 +334,17 @@ function bindEvents() {
     openCropWindow(target);
   });
 
+  document.getElementById('theme-grid').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.theme-btn');
+    if (!btn) return;
+    const key = btn.dataset.themeKey;
+    if (!THEMES[key] || key === getTheme()) return;
+    setTheme(key);
+    applyBackground('main');
+    await notifyBackgroundChanged();
+    refreshThemeButtons();
+  });
+
   const scrimSlider = document.getElementById('bg-scrim');
   scrimSlider.addEventListener('input', (e) => {
     const percent = Number(e.target.value);
@@ -314,6 +354,18 @@ function bindEvents() {
   scrimSlider.addEventListener('change', async () => {
     const percent = Number(scrimSlider.value);
     setScrim(percent / 100);
+    applyBackground('main');
+    await notifyBackgroundChanged();
+  });
+
+  const blurSlider = document.getElementById('bg-blur');
+  blurSlider.addEventListener('input', (e) => {
+    const px = Number(e.target.value);
+    document.getElementById('bg-blur-value').textContent = `${px}px`;
+    document.documentElement.style.setProperty('--glass-blur', `${px}px`);
+  });
+  blurSlider.addEventListener('change', async () => {
+    setBlur(Number(blurSlider.value));
     applyBackground('main');
     await notifyBackgroundChanged();
   });

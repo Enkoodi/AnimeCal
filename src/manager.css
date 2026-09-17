@@ -152,6 +152,7 @@ body.manager-page .bangumi-item-title {
 
 .rating-num.in-range {
   background: rgba(233, 69, 96, 0.18);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
   border-color: var(--accent);
   color: var(--accent-light);
 }

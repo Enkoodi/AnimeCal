@@ -221,13 +221,13 @@ body.crop-page {
 .crop-btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .crop-btn.primary:hover:not(:disabled) {
   background: var(--accent-light);
   border-color: var(--accent-light);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .crop-btn:disabled {

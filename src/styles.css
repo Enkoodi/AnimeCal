@@ -1,21 +1,154 @@
 /* ===== 基础变量 ===== */
+/* ===== 主题 =====
+   四套主题挂在 html[data-theme] 上（默认 obsidian）。这里只放「颜色/材质」，
+   布局相关的值（--radius）另外放在下面。
+   注意：亮色主题（蓝锥矿 / 月光石）底子是浅的，所以 --glass-fill-soft 这类
+   「提亮层」要反过来用深色，--text-shadow-lift 也要换成浅色光晕，否则文字糊在照片上。 */
 :root {
-  --bg-primary: #1a1a2e;
-  --bg-secondary: #16213e;
-  --bg-card: #0f3460;
-  --bg-hover: #1a4a7a;
-  --accent: #e94560;
-  --accent-light: #ff6b81;
-  --text-primary: #f1f1f1;
-  --text-secondary: #b8b8b8;
-  --text-muted: #666;
-  --border: #2a2a4a;
-  --success: #4ade80;
-  --warning: #fbbf24;
+  /* 黑曜石（默认）：非纯黑，带一点冷灰与暗金强调，玻璃上有细纹与斜向反光 */
+  --bg-primary: #121316;
+  --bg-secondary: #191b1f;
+  --bg-card: #23262b;
+  --bg-hover: #2e3238;
+  --border: #34383f;
+  --text-primary: #edeef1;
+  --text-secondary: #a6aab3;
+  --text-muted: #6b7079;
+  --accent: #f2eee6;
+  --accent-light: #fcfaf5;
+  --accent-deep: #d5ccb9;   /* 悬停用：比 --accent 深一档 */
+  --accent-ink: #1b1916;
+  --success: #5fa88a;
+  --success-ink: #08211a;
+  --warning: #c98a3c;
+  --today-marker: #f2eee6;
+  --update-dot: #5fa88a;
+  --surface-pending: #2b2e34;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  --glass-fill: rgba(16, 17, 20, 0.55);
+  --glass-fill-thick: rgba(16, 17, 20, 0.8);
+  --glass-fill-soft: rgba(255, 255, 255, 0.1);
+  --glass-fill-hover: rgba(6, 8, 12, 0.68);   /* 悬停压暗，不是提亮；alpha 要够高，否则在亮照片上「更透」反而更亮 */
+  --glass-edge: rgba(255, 255, 255, 0.18);
+  --glass-hi: rgba(255, 255, 255, 0.25);
+  --glass-line: rgba(255, 255, 255, 0.12);
+  --glass-overlay:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"),
+    linear-gradient(152deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0) 44%);
+  --text-shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* 蓝锥矿：浅蓝主题，奶蓝玻璃配蓝锥矿蓝 */
+[data-theme="benitoite"] {
+  --bg-primary: #e9f1fa;
+  --bg-secondary: #dfeaf7;
+  --bg-card: #f2f7fc;
+  --bg-hover: #d3e3f4;
+  --border: #c2d6ea;
+  --text-primary: #16283e;
+  --text-secondary: #4a5f78;
+  --text-muted: #7d8fa6;
+  --accent: #3a79b8;
+  --accent-light: #5c97d2;
+  --accent-deep: #2b5f95;
+  --accent-ink: #ffffff;
+  --success: #2e8b6b;
+  --success-ink: #ffffff;
+  --warning: #b4791f;
+  --today-marker: #3a79b8;
+  --update-dot: #2e8b6b;
+  --surface-pending: #dce6f2;
+  --shadow: 0 4px 20px rgba(40, 70, 110, 0.18);
+
+  --glass-fill: rgba(226, 239, 253, 0.6);
+  --glass-fill-thick: rgba(238, 246, 254, 0.9);
+  --glass-fill-soft: rgba(22, 40, 62, 0.08);
+  --glass-fill-hover: rgba(18, 34, 54, 0.34);
+  --glass-edge: rgba(22, 45, 75, 0.14);
+  --glass-hi: rgba(255, 255, 255, 0.6);
+  --glass-line: rgba(22, 45, 75, 0.12);
+  --glass-overlay: none;
+  --text-shadow-lift: 0 1px 2px rgba(255, 255, 255, 0.65);
+}
+
+/* 月光石：樱花粉主题，奶粉玻璃带一层珠光（月光石的晕彩） */
+[data-theme="moonstone"] {
+  --bg-primary: #fbf0f3;
+  --bg-secondary: #f7e6eb;
+  --bg-card: #fdf5f7;
+  --bg-hover: #f2dce4;
+  --border: #e9cfd9;
+  --text-primary: #3a2430;
+  --text-secondary: #6b4b58;
+  --text-muted: #9b7c89;
+  --accent: #c4557e;
+  --accent-light: #e087a8;
+  --accent-deep: #a03f68;
+  --accent-ink: #ffffff;
+  --success: #4f9e85;
+  --success-ink: #ffffff;
+  --warning: #c08a3e;
+  --today-marker: #c4557e;
+  --update-dot: #4f9e85;
+  --surface-pending: #f0dde4;
+  --shadow: 0 4px 20px rgba(120, 70, 90, 0.16);
+
+  --glass-fill: rgba(255, 235, 242, 0.6);
+  --glass-fill-thick: rgba(255, 243, 248, 0.9);
+  --glass-fill-soft: rgba(60, 25, 40, 0.08);
+  --glass-fill-hover: rgba(48, 20, 34, 0.32);
+  --glass-edge: rgba(90, 40, 60, 0.12);
+  --glass-hi: rgba(255, 255, 255, 0.7);
+  --glass-line: rgba(90, 40, 60, 0.1);
+  --glass-overlay: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0) 34%,
+    rgba(214, 168, 196, 0.28) 58%,
+    rgba(255, 255, 255, 0.42) 82%,
+    rgba(255, 255, 255, 0)
+  );
+  --text-shadow-lift: 0 1px 2px rgba(255, 255, 255, 0.65);
+}
+
+/* 变石：底色偏深，强调色由 JS 按背景图主色调实时算出来（见 src/theme.js），
+   这里的值是「没设背景图」时的兜底（变石的日光绿）。 */
+[data-theme="alexandrite"] {
+  --bg-primary: #101614;
+  --bg-secondary: #17201d;
+  --bg-card: #1f2a26;
+  --bg-hover: #293833;
+  --border: #2e3a36;
+  --text-primary: #e7f0ec;
+  --text-secondary: #9fada8;
+  --text-muted: #66736e;
+  --accent: #2e8c6c;
+  --accent-light: #46a886;
+  --accent-deep: #226b52;
+  --accent-ink: #ffffff;
+  --success: #5fa88a;
+  --success-ink: #08211a;
+  --warning: #c98a3c;
+  --today-marker: #2e8c6c;
+  --update-dot: #5fa88a;
+  --surface-pending: #26302c;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  --glass-fill: rgba(15, 22, 19, 0.55);
+  --glass-fill-thick: rgba(15, 22, 19, 0.8);
+  --glass-fill-hover: rgba(4, 10, 8, 0.68);
+  --glass-fill-soft: rgba(255, 255, 255, 0.1);
+  --glass-edge: rgba(255, 255, 255, 0.18);
+  --glass-hi: rgba(255, 255, 255, 0.25);
+  --glass-line: rgba(255, 255, 255, 0.12);
+  --glass-overlay: none;
+  --text-shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+:root {
   --radius: 8px;
-  --shadow: 0 4px 20px rgba(0,0,0,0.4);
-  --today-marker: #e94560;
-  --update-dot: #4ade80;
+  --glass-blur: 24px; /* 由设置里的「玻璃模糊度」滑杆驱动 */
 }
 
 * {
@@ -75,53 +208,359 @@ html.has-custom-bg body {
   border-color: transparent;
 }
 
-/* 滚动条轨道不再是一整条实色，避免挡住背景 */
+/* 滚动条也按玻璃来：轨道全透明，滑块用半透明白 */
 html.has-custom-bg ::-webkit-scrollbar-track { background: transparent; }
+html.has-custom-bg ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
+html.has-custom-bg ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+html.has-custom-bg ::-webkit-scrollbar-corner { background: transparent; }
 
-/* 大面积面板改为半透明，让背景透出来；小控件（输入框、集数格等）保持实色以便阅读。
-   注意：按钮一类控件不能依赖「透明底 + 亮字」，这里都保留了底色与边框。 */
+/* ===== 磨砂玻璃（有自定义背景时的整套材质）=====
+   卡片级元素做 backdrop-filter 模糊；卡片内部的小控件只用半透明白提亮、不再叠模糊
+   （嵌套模糊等于让 GPU 采样两遍，肉眼看不出差别）；强调色按钮做成「带色玻璃」——
+   着色够浓时模糊看不出来，所以也不加 blur。想更雾 / 更透 / 更亮只改下面这几个值。 */
+html.has-custom-bg {
+  --glass-sat: 170%;
+  --glass-lift: 0 8px 24px rgba(0, 0, 0, 0.28); /* 浮起来 */
+}
+
+/* 卡片 / 面板：由这一层负责模糊；background-image 是主题给的细纹 / 反光 */
+html.has-custom-bg .setting-group,
+html.has-custom-bg .anime-item,
+html.has-custom-bg .bangumi-item,
+html.has-custom-bg .follow-item {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  background-color: var(--glass-fill);
+  background-image: var(--glass-overlay, none);
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 12px;
+  box-shadow: var(--glass-lift), inset 0 0.5px 0 var(--glass-hi);
+}
+
+html.has-custom-bg .setting-group { border-radius: 14px; }
+
+/* 弹窗 / toast：更厚的一档玻璃，保证任何照片上都读得清 */
+html.has-custom-bg .dialog-card,
+html.has-custom-bg .toast {
+  backdrop-filter: blur(30px) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(30px) saturate(var(--glass-sat));
+  background-color: var(--glass-fill-thick);
+  background-image: var(--glass-overlay, none);
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 14px;
+  box-shadow: var(--glass-lift), inset 0 0.5px 0 var(--glass-hi);
+}
+
 html.has-custom-bg #detail-view { background: transparent; }
-html.has-custom-bg .setting-group { background: rgba(22, 33, 62, 0.55); }
-html.has-custom-bg .anime-item { background: rgba(22, 33, 62, 0.55); }
-html.has-custom-bg .anime-item:hover { background: rgba(15, 52, 96, 0.72); }
-html.has-custom-bg .anime-item.watched { background: rgba(22, 33, 62, 0.4); }
-html.has-custom-bg .my-anime-tag { background: rgba(15, 52, 96, 0.72); }
-html.has-custom-bg .toast { background: rgba(15, 52, 96, 0.94); border: 1px solid var(--border); }
-html.has-custom-bg .follow-item { background: rgba(22, 33, 62, 0.55); }
-html.has-custom-bg .bangumi-item { background: rgba(26, 26, 46, 0.6); }
-html.has-custom-bg .dialog-card { background: rgba(22, 33, 62, 0.94); }
 /* manager.css 里 body.manager-page 有实色底，这里用更高特异性压掉 */
 html.has-custom-bg body.manager-page { background: transparent; }
+/* 日历整块垫一层玻璃（只上底色和圆角、不加内边距，格子位置一点不动）：
+   否则纯文字贴在照片上，亮一点的地方日期就看不见了 */
+html.has-custom-bg .calendar-grid {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  background: var(--glass-fill);
+  background-image: var(--glass-overlay, none);
+  border-radius: 12px;
+  box-shadow: inset 0 0.5px 0 var(--glass-hi);
+}
 
-/* 自定义背景下，标题栏 / 工具栏上的纯图标按钮必须自带底色与边框，
-   否则落在亮色图片上会「消失」（不能依赖「透明底 + 亮字」） */
+/* 分隔线：深色实线在玻璃上很脏，换成低透明度白 */
+html.has-custom-bg .detail-header,
+html.has-custom-bg .toolbar,
+html.has-custom-bg .dialog-actions,
+html.has-custom-bg .selection-bar,
+html.has-custom-bg .filter-section {
+  border-color: var(--glass-line);
+}
+
+/* 直接浮在照片上的小控件（筛选 chip、评分格、输入框、下拉、tab、移除按钮、清除按钮）：
+   不模糊就压不住亮照片，所以这一层也要 blur，尺寸小、数量可控。 */
+html.has-custom-bg .chip:not(.active),
+html.has-custom-bg .tab-btn:not(.active),
+html.has-custom-bg .rating-num:not(.in-range):not(.selected),
+html.has-custom-bg .filter-row input,
+html.has-custom-bg .filter-row select,
+html.has-custom-bg .form-group input,
+html.has-custom-bg .form-group select,
+html.has-custom-bg .unfollow-btn:not(:hover) {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  background: var(--glass-fill);
+  background-image: var(--glass-overlay, none);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: inset 0 0.5px 0 var(--glass-hi);
+}
+
+/* ⚠️ 这几个类的 `transition: all` 会把 backdrop-filter 也纳入过渡，改「玻璃模糊度」时模糊会卡住不更新
+   （实测：带 transition:all 的元素永远停在初始模糊值上）。这里把过渡属性显式列出来：保留 hover 的配色过渡，
+   但不再过渡 filter/backdrop-filter —— 模糊变化本来就是瞬时的，过渡它除了掉帧没别的好处。 */
+html.has-custom-bg .chip,
+html.has-custom-bg .tab-btn,
+html.has-custom-bg .icon-btn,
+html.has-custom-bg .unfollow-btn {
+  transition-property: background-color, border-color, color, box-shadow, transform;
+}
+
+/* 圆角按元素统一（选中前后不能变，所以写在元素类上而不是 :not() 的变体上） */
+html.has-custom-bg .chip,
+html.has-custom-bg .tab-btn { border-radius: 999px; }
+html.has-custom-bg .rating-num,
+html.has-custom-bg .filter-row input,
+html.has-custom-bg .filter-row select,
+html.has-custom-bg .form-group input,
+html.has-custom-bg .form-group select,
+html.has-custom-bg .unfollow-btn,
+html.has-custom-bg .follow-clear-btn { border-radius: 10px; }
+html.has-custom-bg .unfollow-btn { border-radius: 50%; }
+
+/* 封面占位底色：实心宝蓝在玻璃上很脏，改成浅白（正常有封面时看不到） */
+html.has-custom-bg .anime-cover,
+html.has-custom-bg .follow-cover,
+html.has-custom-bg .dialog-item-cover,
+html.has-custom-bg .bangumi-item img,
+html.has-custom-bg .bg-row-thumb img { background: rgba(255, 255, 255, 0.08); }
+
+/* 清除按钮：底色转玻璃，但保留一圈强调色描边（它是危险操作，得有辨识度） */
+html.has-custom-bg .follow-clear-btn:not(:hover):not(:disabled) {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  background: var(--glass-fill);
+  background-image: var(--glass-overlay, none);
+  border: 0.5px solid rgba(233, 69, 96, 0.6);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 10px;
+  box-shadow: inset 0 0.5px 0 var(--glass-hi);
+}
+
+/* 卡片内部的小控件：底下那层玻璃已经糊过了，这里只提亮，别再叠 blur */
+html.has-custom-bg .bg-row,
+html.has-custom-bg .my-anime-tag,
+html.has-custom-bg .bg-mini-btn,
+html.has-custom-bg .bg-row-thumb,
+html.has-custom-bg .theme-btn,
+html.has-custom-bg .dialog-btn-ghost {
+  background: var(--glass-fill-soft);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: inset 0 0.5px 0 var(--glass-hi);
+}
+
+/* 选中那套主题在玻璃上也要看得出来（底色/描边都被上面那条压掉了） */
+html.has-custom-bg .theme-btn.active {
+  border: 0.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+html.has-custom-bg .bg-row,
+html.has-custom-bg .dialog-btn-ghost { border-radius: 10px; }
+html.has-custom-bg .my-anime-tag { border-radius: 999px; }
+html.has-custom-bg .bg-mini-btn { border-radius: 50%; }
+html.has-custom-bg .bg-row:hover { border-color: var(--accent); }
+
+/* 状态格子 / 已看标记：实色块在玻璃上太跳，改成同色系半透明 */
+html.has-custom-bg .ep-cell.watched {
+  background: rgba(74, 222, 128, 0.86);
+  background: color-mix(in srgb, var(--success) 86%, transparent);
+}
+html.has-custom-bg .ep-cell.unwatched { background: var(--glass-fill-soft); }
+html.has-custom-bg .ep-cell.pending {
+  background: color-mix(in srgb, var(--glass-fill-soft) 45%, transparent);
+  color: var(--text-secondary);
+}
+
+/* 悬停 / 置顶这类原本的实色填充：一律换成提亮一档的玻璃 */
+html.has-custom-bg .tab-btn:hover:not(.active),
+html.has-custom-bg .chip:hover:not(.active),
+html.has-custom-bg .rating-num:hover:not(.selected):not(.in-range),
+html.has-custom-bg .theme-btn:hover:not(.active),
+html.has-custom-bg .bg-mini-btn:hover,
+html.has-custom-bg .bg-row:hover,
+html.has-custom-bg .bangumi-item:hover,
+html.has-custom-bg .anime-item:hover,
+html.has-custom-bg .day-cell:not(.today):hover {
+  background: var(--glass-fill-hover);
+}
+
+html.has-custom-bg .anime-item.watched { background: rgba(18, 20, 26, 0.28); }
+
+/* 表单原件（复选框 / 滑杆）默认是系统白底，在玻璃上像从浅色主题误入，一起玻璃化 */
+html.has-custom-bg .toggle-label input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  background: rgba(255, 255, 255, 0.14);
+  border: 0.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3);
+}
+
+html.has-custom-bg .toggle-label input[type="checkbox"]:checked {
+  background: rgba(233, 69, 96, 0.86);
+  background: color-mix(in srgb, var(--accent) 86%, transparent);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+html.has-custom-bg .toggle-label input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-ink);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+html.has-custom-bg input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+html.has-custom-bg input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+/* 强调色按钮 / 选中态：实色 → 带色玻璃（74% 着色 + 高光边） */
+html.has-custom-bg .action-btn,
+html.has-custom-bg .tab-btn.active,
+html.has-custom-bg .dialog-btn-danger,
+html.has-custom-bg .chip.active,
+html.has-custom-bg .rating-num.selected,
+html.has-custom-bg .icon-btn.active,
+html.has-custom-bg .icon-btn.pinned,
+html.has-custom-bg .day-cell.today {
+  background: rgba(233, 69, 96, 0.86);
+  background: color-mix(in srgb, var(--accent) 86%, transparent);
+  border: 0.5px solid rgba(255, 255, 255, 0.24);
+  color: var(--accent-ink);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3), var(--glass-lift);
+}
+
+/* 变石：按钮的渐变。颜色由 accent-field.js 按位置写进 --accent / --accent-light / --accent-deep，
+   渐变本身必须留在 CSS —— 内联的 background-image 会盖掉 :hover 的变色，放这里悬停才能整体压深一档。
+   ⚠️ 下面这份类名单 = accent-field.js 里「常态就是实色填充」的那批，两边要一起改。 */
+html[data-theme="alexandrite"].has-custom-bg :is(
+  .action-btn,
+  .dialog-btn-danger,
+  .chip.active,
+  .tab-btn.active,
+  .icon-btn.active,
+  .icon-btn.pinned,
+  .day-cell.today,
+  .rating-num.selected,
+  .toggle-label input[type="checkbox"]:checked
+) {
+  background-image: linear-gradient(155deg, var(--accent-light) 0%, var(--accent) 45%, var(--accent-deep) 100%);
+}
+
+html[data-theme="alexandrite"].has-custom-bg :is(
+  .action-btn,
+  .dialog-btn-danger,
+  .chip.active,
+  .tab-btn.active,
+  .icon-btn.active,
+  .icon-btn.pinned,
+  .day-cell.today,
+  .rating-num.selected,
+  .toggle-label input[type="checkbox"]:checked
+):hover {
+  /* 悬停 = 同一组颜色的更深版本（往黑里压，色相不变） */
+  background-image: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--accent-light) 76%, #000) 0%,
+    color-mix(in srgb, var(--accent) 68%, #000) 45%,
+    color-mix(in srgb, var(--accent-deep) 82%, #000) 100%
+  );
+}
+
+/* 「已看」勾选标记是 success 色，单独一遍 */
+html.has-custom-bg .watched-badge {
+  background: rgba(74, 222, 128, 0.88);
+  background: color-mix(in srgb, var(--success) 88%, transparent);
+  color: var(--success-ink);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* 悬停：强调色按钮压深一档。
+   ⚠️ 选中态必须写成 html.has-custom-bg 前缀，否则被上面那条玻璃底规则（多一个类型选择器）压掉。 */
+html.has-custom-bg .action-btn:hover,
+html.has-custom-bg .dialog-btn-danger:hover,
+html.has-custom-bg .chip.active:hover,
+html.has-custom-bg .tab-btn.active:hover,
+html.has-custom-bg .icon-btn.active:hover,
+html.has-custom-bg .icon-btn.pinned:hover,
+html.has-custom-bg .day-cell.today:hover,
+html.has-custom-bg .rating-num.selected:hover {
+  background: rgba(196, 51, 74, 0.94);
+  background: color-mix(in srgb, var(--accent-deep) 96%, transparent);
+}
+
+/* 标题栏 / 工具栏上的纯图标按钮：落在亮照片上必须自带玻璃底与描边，
+   否则会「消失」（不能依赖「透明底 + 亮字」） */
 html.has-custom-bg .icon-btn,
 html.has-custom-bg .nav-btn {
-  background: rgba(15, 52, 96, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  background: var(--glass-fill);
+  background-image: var(--glass-overlay, none);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: inset 0 0.5px 0 var(--glass-hi);
   color: var(--text-primary);
 }
 
 html.has-custom-bg .icon-btn:hover,
 html.has-custom-bg .nav-btn:hover {
-  background: var(--bg-hover);
+  background: var(--glass-fill-hover);
 }
 
 html.has-custom-bg .icon-btn.active,
 html.has-custom-bg .icon-btn.pinned {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--accent-ink);
 }
 
-/* 日历文字加一层投影，配合遮罩保证在图片上也读得清 */
+/* 文字加一层投影，配合遮罩保证在图片上也读得清。
+   只覆盖「直接落在图上 / 落在半透明面板上」的文字；自带实色底的小控件（chip、集数格等）不需要。 */
 html.has-custom-bg .header span,
 html.has-custom-bg .weekdays span,
 html.has-custom-bg .day-number,
 html.has-custom-bg .day-update-count,
 html.has-custom-bg .detail-header span,
-html.has-custom-bg .empty-state {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+html.has-custom-bg .empty-state,
+html.has-custom-bg .empty-icon,
+html.has-custom-bg .loading,
+html.has-custom-bg h3,
+html.has-custom-bg h4,
+html.has-custom-bg label,
+html.has-custom-bg .setting-hint,
+html.has-custom-bg .anime-title,
+html.has-custom-bg .anime-time,
+html.has-custom-bg .anime-episode,
+html.has-custom-bg .anime-range,
+html.has-custom-bg .anime-edit-hint,
+html.has-custom-bg .anime-watched-hint,
+html.has-custom-bg .bangumi-item-title,
+html.has-custom-bg .bangumi-item-meta,
+html.has-custom-bg .bg-row-name,
+html.has-custom-bg .bg-row-sub,
+html.has-custom-bg .follow-title,
+html.has-custom-bg .follow-sub,
+html.has-custom-bg .rating-badge,
+html.has-custom-bg .added-mark,
+html.has-custom-bg .legend-watched,
+html.has-custom-bg .legend-unwatched,
+html.has-custom-bg .legend-pending {
+  text-shadow: var(--text-shadow-lift, 0 1px 3px rgba(0, 0, 0, 0.8));
 }
 
 html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
@@ -230,10 +669,10 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 .day-cell.other-month { color: var(--text-muted); }
 .day-cell.today {
   background: var(--today-marker);
-  color: #fff;
+  color: var(--accent-ink);
   font-weight: 700;
 }
-.day-cell.today:hover { background: var(--accent-light); }
+.day-cell.today:hover { background: var(--accent-deep); }
 .day-cell.selected { outline: 2px solid var(--accent); }
 
 .day-number { font-size: 13px; line-height: 1.2; }
@@ -243,9 +682,9 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   margin-top: 1px;
   font-weight: 600;
 }
-.day-cell.today .day-update-count { color: #fff; }
-.day-cell.today .day-update-count.all-watched { color: rgba(255,255,255,0.55); }
-.day-update-count.all-watched { color: #9a9fa8; }
+.day-cell.today .day-update-count { color: var(--accent-ink); }
+.day-cell.today .day-update-count.all-watched { color: color-mix(in srgb, var(--accent-ink) 55%, transparent); }
+.day-update-count.all-watched { color: var(--text-secondary); }
 
 .update-indicator {
   width: 5px;
@@ -267,14 +706,34 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 }
 
 .icon-btn {
+  /* 定死正方形：四个按钮里的图标是同一套 24 网格的线性 SVG（见下面的 .icon-btn svg），
+     盒子尺寸只由这里决定（2026-09-17 用户要求四个按钮大小统一） */
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 14px;
   cursor: pointer;
-  padding: 4px 6px;
   border-radius: var(--radius);
   transition: all 0.2s;
+}
+
+/* 图标：24 网格缩到 15px、描边 1.8（≈1.1px 实描边）。
+   颜色一律走 currentColor —— 所以 hover / 置顶 / 变石按位置取色都会自动跟着按钮的 color 走，
+   不需要也不该在 SVG 里写死颜色。几何形状重复的属性（fill/stroke）集中在这里，标签内只写形状。 */
+.icon-btn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .icon-btn:hover {
@@ -284,23 +743,19 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 
 .icon-btn.active,
 .icon-btn.pinned {
-  color: #fff;
+  color: var(--accent-ink);
   background: var(--accent);
 }
 
 .icon-btn.pinned:hover {
-  background: var(--accent-light);
-  color: #fff;
+  background: var(--accent-deep);
+  color: var(--accent-ink);
 }
 
-.icon-btn:not(.pinned) .pin-off {
-  opacity: 0.45;
-  filter: grayscale(1);
-}
-
-.pin-icon {
-  font-size: 13px;
-  line-height: 1;
+/* 未置顶：图标淡化。⚠️ 不能用 grayscale —— 图标是 currentColor 的 SVG，去色对它无效，
+   而且两个状态本来就是同一枚图标，靠按钮底色（.pinned 的强调色底）与透明度区分 */
+.icon-btn:not(.pinned) .pin-icon {
+  opacity: 0.62;
 }
 
 .empty-icon {
@@ -341,10 +796,18 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   border-color: var(--bg-hover);
 }
 
+/* 选中 / 激活态的按钮：悬停再压深一档（原本悬停没有任何反馈） */
+.chip.active:hover,
+.tab-btn.active:hover,
+.icon-btn.active:hover,
+.rating-num.selected:hover {
+  background: var(--accent-deep);
+}
+
 .chip.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .filter-row {
@@ -404,7 +867,8 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   border: 1px solid var(--accent);
   border-radius: 4px;
   background: rgba(233, 69, 96, 0.16);
-  color: var(--accent-light);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text-primary);
   font-size: 10px;
   line-height: 1.4;
   vertical-align: 1px;
@@ -502,7 +966,7 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   height: 18px;
   border-radius: 50%;
   background: var(--success);
-  color: #063;
+  color: var(--success-ink);
   font-size: 12px;
   font-weight: 700;
   display: flex;
@@ -556,7 +1020,7 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   width: 100%;
   padding: 10px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   border: none;
   border-radius: var(--radius);
   font-size: 13px;
@@ -565,7 +1029,7 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   transition: background 0.2s, transform 0.1s;
 }
 
-.action-btn:hover { background: var(--accent-light); }
+.action-btn:hover { background: var(--accent-deep); }
 .action-btn:active { transform: scale(0.98); }
 
 .settings-content {
@@ -663,7 +1127,7 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 
 .tab-btn.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .tab-btn:hover:not(.active) {
@@ -824,6 +1288,49 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   font-size: 12px;
 }
 
+/* ===== 设置 - 个性化：主题选择 ===== */
+.theme-grid {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.theme-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 2px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.theme-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.theme-btn.active {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.theme-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
 /* ===== 设置 - 个性化（自定义背景） ===== */
 .bg-rows {
   display: flex;
@@ -916,7 +1423,8 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 .bg-mini-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(233, 69, 96, 0.14);
+  background: rgba(233, 69, 96, 0.16);
+  background: color-mix(in srgb, var(--accent-deep) 22%, transparent);
 }
 
 .bg-scrim-row {
@@ -931,6 +1439,10 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   font-size: 12px;
   color: var(--text-secondary);
   white-space: nowrap;
+  /* 定宽：两行标签字数不同（背景遮罩 / 玻璃模糊度），不给死宽度的话滑杆是 flex:1，
+     短标签那行的滑杆就会长出一截，两条滑杆左右都对不齐 */
+  width: 64px;
+  flex: none;
 }
 
 .bg-scrim-row input[type="range"] {
@@ -943,7 +1455,9 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 .bg-scrim-value {
   font-size: 11px;
   color: var(--text-primary);
-  min-width: 32px;
+  /* 同样定宽（而不是 min-width）：右端也要对齐 */
+  width: 34px;
+  flex: none;
   text-align: right;
 }
 
@@ -988,9 +1502,9 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 
 /* 悬停：实心填充，文字转为纯白 */
 .follow-clear-btn:hover:not(:disabled) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: var(--accent-ink);
 }
 
 .follow-clear-btn:disabled {
@@ -1112,12 +1626,12 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 .dialog-btn-danger {
   background: var(--accent);
   border: 1px solid var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .dialog-btn-danger:hover {
-  background: var(--accent-light);
-  border-color: var(--accent-light);
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
 }
 
 .following-list {
@@ -1183,9 +1697,9 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 }
 
 .unfollow-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: var(--accent-ink);
 }
 
 /* 集数小格子：已看=绿 / 未看=白 / 未更新=灰 */
@@ -1214,19 +1728,19 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 
 .ep-cell.watched {
   background: var(--success);
-  color: #063;
+  color: var(--success-ink);
 }
 
 .ep-cell.unwatched {
   background: var(--bg-card);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .ep-cell.pending {
-  background: #2f2f45;
+  background: var(--surface-pending);
   color: var(--text-muted);
 }
 
 .legend-watched { color: var(--success); }
-.legend-unwatched { color: #fff; }
+.legend-unwatched { color: var(--text-primary); }
 .legend-pending { color: var(--text-muted); }

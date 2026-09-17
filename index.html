@@ -20,11 +20,35 @@
         <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
       </div>
       <div id="calendar-grid" class="calendar-grid"></div>
+      <!-- 四个按钮共用一套线性 SVG 图标（24 网格 / currentColor；描边粗细与尺寸见 styles.css 的 .icon-btn svg） -->
       <div class="toolbar">
-        <button id="btn-settings" class="icon-btn" title="设置">&#9881;</button>
-        <button id="btn-toggle-pin" class="icon-btn active pinned" title="已置顶（点击取消）" aria-pressed="true"><span class="pin-icon">📌</span></button>
-        <button id="btn-minimize" class="icon-btn" title="最小化到托盘">&#8211;</button>
-        <button id="btn-close" class="icon-btn" title="关闭">&#10005;</button>
+        <button id="btn-settings" class="icon-btn" title="设置" aria-label="设置">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="2.9" />
+            <circle cx="12" cy="12" r="6.3" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(45 12 12)" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(90 12 12)" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(135 12 12)" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(180 12 12)" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(225 12 12)" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(270 12 12)" />
+            <line x1="12" y1="6.3" x2="12" y2="3.1" transform="rotate(315 12 12)" />
+          </svg>
+        </button>
+        <button id="btn-toggle-pin" class="icon-btn active pinned" title="已置顶（点击取消）" aria-pressed="true" aria-label="窗口置顶">
+          <svg class="pin-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20.2V5" />
+            <path d="M6.9 10.1 12 5 17.1 10.1" />
+            <path d="M7.1 20.2h9.8" />
+          </svg>
+        </button>
+        <button id="btn-minimize" class="icon-btn" title="最小化到托盘" aria-label="最小化到托盘">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12.5h10" /></svg>
+        </button>
+        <button id="btn-close" class="icon-btn" title="关闭" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 8.2 15.8 15.8M15.8 8.2 8.2 15.8" /></svg>
+        </button>
       </div>
     </div>
 
@@ -66,11 +90,17 @@
         </div>
         <div class="setting-group">
           <h3>个性化</h3>
+          <div id="theme-grid" class="theme-grid"></div>
           <div id="bg-rows" class="bg-rows"></div>
           <label class="bg-scrim-row" for="bg-scrim">
             <span class="bg-scrim-label">背景遮罩</span>
             <input type="range" id="bg-scrim" min="0" max="80" step="5" value="45" />
             <span id="bg-scrim-value" class="bg-scrim-value">45%</span>
+          </label>
+          <label class="bg-scrim-row" for="bg-blur">
+            <span class="bg-scrim-label">玻璃模糊度</span>
+            <input type="range" id="bg-blur" min="0" max="30" step="1" value="24" />
+            <span id="bg-blur-value" class="bg-scrim-value">24px</span>
           </label>
         </div>
         <div class="setting-group">
