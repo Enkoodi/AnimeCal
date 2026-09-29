@@ -190,6 +190,22 @@ body {
   border: 1px solid var(--bg-primary);
 }
 
+/* ===== 列表里的番剧名：一律最多排两行 =====
+   四个窗口的列表标题共用一个规则，改行数只改这里。
+   overflow-wrap 必须留着：长英文/无空格标题断了行才不会再把这个容器的
+   「最小内容宽度」顶大（顶大了会把整个窗口撑出横向滚动，见 #following-app 的注释）。 */
+.follow-title,
+.anime-title,
+.bangumi-item-title,
+.dialog-item-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
 /* ===== 自定义背景 =====
    图片铺在 html 上（body 透明），上面叠一层可调浓度的暗色遮罩保证文字可读。
    贴图逻辑见 public/bg-boot.js 与 src/background.js，两者共用 --window-bg-image / --bg-scrim。 */
@@ -859,7 +875,7 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   font-weight: 400;
 }
 
-/* 「下季」小标记：换季前本季 + 下季同列展示时用来区分（只标下季） */
+/* 「N月番」小标记：标明该条目取自哪一季的季度页，换季前本季 + 下季同列时用来区分 */
 .season-tag {
   display: inline-block;
   margin-right: 6px;
@@ -981,9 +997,6 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .anime-time {
@@ -1202,9 +1215,6 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 .bangumi-item-title {
   font-size: 12px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .bangumi-item-meta {
@@ -1474,6 +1484,9 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 /* ===== 「管理番剧」窗口（following） ===== */
 #following-app {
   min-height: 100%;
+  /* 不加 min-width: 0 的话，条目里 nowrap 的长番剧名会把本容器的「最小内容宽度」顶大，
+     在 460px 窗口里整页溢出（横向滚动 / 边框被顶开） */
+  min-width: 0;
   padding: 16px 18px 24px;
   display: flex;
   flex-direction: column;
@@ -1582,9 +1595,6 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .dialog-item-sub {
@@ -1670,9 +1680,6 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .follow-sub {
@@ -1711,7 +1718,7 @@ html.has-custom-bg .day-cell.other-month { color: var(--text-secondary); }
 }
 
 .ep-cell {
-  min-width: 22px;
+  min-width: 20px;
   height: 22px;
   padding: 0 4px;
   border-radius: 4px;

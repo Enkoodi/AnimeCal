@@ -559,8 +559,6 @@ function renderBangumiSeason() {
 
   const myAnime = AnimeStore.getMyAnime();
   const weekdayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-  // 列表在换季前会同时含本季 + 下季，给下季条目加个小标记便于区分
-  const nextSeasonKey = YucAPI.currentSeasonKeys()[1] || null;
 
   container.innerHTML = `<div class="selection-bar"><span>显示 ${items.length} / ${seasonTotal} 部</span></div>` +
     items.map(item => {
@@ -568,8 +566,9 @@ function renderBangumiSeason() {
       const startLabel = item.startDate
         ? formatShortDate(item.startDate)
         : (item.yucStartDate ? formatShortDate(item.yucStartDate) : (item.seasonLabel || ''));
-      const seasonTag = nextSeasonKey && item.seasonKey === nextSeasonKey
-        ? `<span class="season-tag">${Number(nextSeasonKey.slice(4))}月番</span>`
+      // 标出该条目取自哪一季的季度页（如「10月番」），换季前本季/下季同列时也能区分
+      const seasonTag = item.seasonKey
+        ? `<span class="season-tag">${Number(item.seasonKey.slice(4))}月番</span>`
         : '';
       // weekday 可能为 null（网络放送等无固定档期），此时不显示星期
       const weekdayLabel = item.weekday == null ? '未定档' : weekdayNames[item.weekday % 7];
