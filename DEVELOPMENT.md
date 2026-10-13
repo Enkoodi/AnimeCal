@@ -104,6 +104,54 @@
   - 验证这类交互**必须用 CDP 真实鼠标事件**（`Input.dispatchMouseEvent`），
     合成 `PointerEvent` 会漏掉「向内拖到下限没反应」这类只在真实手势下才暴露的问题。
 
+## 6. 发布产物要「去本机痕迹」（构建机用户名 / 绝对路径）
+
+- **为什么**：Rust 会把**源码与依赖的绝对路径当作字符串常量**写进二进制（panic 位置、`file!()`、
+  `#[track_caller]`、assert 消息）。这些**不是**调试信息，所以 `strip` 一个都删不掉。不处理时 release 产物里
+  `C:\Users\<构建者>\.cargo\registry\src\mirrors.ustc.edu.cn-<hash>\<crate>-<ver>\src\...` 会出现 **500+ 次**，
+  等于把 Windows 用户名和私有 crates 镜像源一起发出去了。
+  唯一手段是 rustc 的 `--remap-path-prefix`：编译期把构建机路径前缀替换成中性路径（`/home/user`、`/cargo/registry`）。
+
+- **本项目是公开项目，所以前缀一律从构建环境推导，不落仓库**（仓库里不留用户名 / 镜像源 / 绝对路径）：
+
+  ```bash
+  npm run build:release                # = node scripts/build-release.mjs
+  npm run build:release -- --dry-run   # 只打印将产生的映射，不构建
+  ```
+
+  脚本按顺序组装重映射规则：
+  1. 用户目录（`CARGO_HOME` 的上一级 → `USERPROFILE` → `os.homedir()`）→ `/home/user`（兜底，放最前）
+  2. `$CARGO_HOME` → `/cargo`
+  3. **扫描** `$CARGO_HOME/registry/src/` 下真实的目录名（`mirrors.ustc.edu.cn-<hash>` 这种）
+     → `/cargo/registry`（放最后），所以换镜像 / 换机器都不用改脚本
+  4. 整体写进 `CARGO_ENCODED_RUSTFLAGS` 交给 cargo
+
+- ⚠️ **构建必须走 `npm run build:release`**。直接 `npx tauri build` **不会**触发路径重写，产物里仍带构建机路径。
+- `src-tauri/Cargo.toml` 的 `[profile.release] strip = true` 与它配合（去符号表，顺带瘦身）。
+  没开 `panic = "abort"`：Tauri/wry 依赖 unwind，改了风险大于收益。
+- **首次 / 每次改动后都是全量重编译**（rustflags 一变，cargo fingerprint 全失效，约 5 分钟）。
+
+- **两个实测坑**：
+  - ⚠️ **规则顺序决定成败**（rustc 1.97 实测）：`--remap-path-prefix` **不是「最长匹配优先」，
+    而是最后一条匹配的生效**（后覆盖前）。笼统的短前缀要排**前面**当兜底，精确的长前缀必须排**最后**。
+    写反了长前缀会被短前缀整体吃掉，产物里会留下
+    `/home/user\.cargo\registry\src\mirrors.ustc.edu.cn-<hash>\...` —— 用户名没了，但镜像源还在。
+    脚本已按此排序。30 秒最小复现（不必全量构建）：把任意 `.rs` 从绝对路径编译，
+    `rustc '--remap-path-prefix=D:\t\aa=/SHORT' '--remap-path-prefix=D:\t\aa\bb=/LONG' 'D:\t\aa\bb\t.rs' -o t.exe`
+    再跑 `t.exe` 看 panic 里打印的路径。
+  - 用 `CARGO_ENCODED_RUSTFLAGS`（`\x1f` 分隔）而不是 `RUSTFLAGS`：后者按**空白分词**，
+    用户名里只要有空格，一个路径就会被拆成两个 flag。
+  - 与「相对路径」的关系：项目自身 `src\main.rs` 本来就是相对路径，不泄露；**只有依赖 crate 是绝对路径**。
+
+- **产物自检**（git bash，期望输出 0）：
+  ```bash
+  exe=src-tauri/target/release/anime-cal.exe
+  for p in 'C:\\Users' 'mirrors.ustc' '\\.cargo'; do printf "%-14s " "$p"; grep -o -a -- "$p" "$exe" | wc -l; done
+  ```
+  想顺带看构建时刻 / 依赖版本，可直接读 PE：`TimeDateStamp` 即构建时间（UTC）。
+- **有意保留**（判定为非本机信息）：`/cargo/registry\<crate>-<ver>\src\...`（中性路径 + 依赖版本）、
+  `/rustc/<hash>/library/...`（std 内置路径，除非 nightly `build-std` 否则改不掉）、`anime_cal.pdb`（相对文件名）。
+
 ## 其他约定（简述）
 
 - 番剧信息优先从 Bangumi 获取，失败回退 yuc.wiki；搜索时去除名称尾部的分段标识（P2 / Part.2）。

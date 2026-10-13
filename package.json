@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:release": "node scripts/build-release.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },
